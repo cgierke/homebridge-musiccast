@@ -1,0 +1,34 @@
+{
+    "name": "homebridge-musiccast-multiroom",
+    "version": "0.1.0",
+    "description": "",
+    "main": "dist/main.js",
+    "scripts": {
+        "clean": "rimraf ./dist",
+        "build": "rimraf ./dist && tsc",
+        "prepublishOnly": "npm run build",
+        "postpublish": "npm run clean",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Christian Gierke <christian@gierke.de>",
+    "engines": {
+        "homebridge": ">=1.6.0"
+    },
+    "keywords": [
+        "homebridge-plugin"
+    ],
+    "files": [
+        "dist"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://gitlab.com/cgierke/homebridge-musiccast.git"
+    },
+    "devDependencies": {
+        "@types/node": "^10.17.60",
+        "homebridge": "^1.6.0",
+        "rimraf": "^3.0.2",
+        "typescript": "^4.6.3"
+    },
+    "dependencies": {}
+}
