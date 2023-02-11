@@ -11,6 +11,7 @@
     "sourceMap": true,
     "rootDir": "src",
     "outDir": "dist",
+    "noImplicitAny": false,
 
     "strict": true,
     "esModuleInterop": true,
