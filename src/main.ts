@@ -9,7 +9,7 @@ import { yamahaAPI } from "./yamahaAPI";
 import { yamahaDevice } from "./yamahaDevice";
 
 const PLUGIN_NAME = "homebridge-musiccast-multiroom";
-const PLATFORM_NAME = "MusiccastMultiroomPlugin";
+const PLATFORM_NAME = "MusiccastMultiroom";
 
 export = (api: API) => {
     api.registerPlatform(PLATFORM_NAME, MusiccastMultiroom);

@@ -1,0 +1,26 @@
+{
+    "pluginAlias": "MusiccastMultiroom",
+    "pluginType": "platform",
+    "singular": true,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "platform": {
+                "type": "string"
+            },
+            "server": {
+                "type": "string",
+                "required": true,
+                "default": "192.0.2.11"
+            },
+            "clients": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "false": true,
+                    "default": "192.0.2.22"
+                }
+            }
+        }
+    }
+}
