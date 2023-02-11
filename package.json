@@ -1,6 +1,6 @@
 {
     "name": "homebridge-musiccast-multiroom",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "",
     "main": "dist/main.js",
     "scripts": {
@@ -18,7 +18,8 @@
         "homebridge-plugin"
     ],
     "files": [
-        "dist"
+        "dist",
+        "config.schema.json"
     ],
     "repository": {
         "type": "git",
