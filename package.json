@@ -22,7 +22,10 @@
     ],
     "repository": {
         "type": "git",
-        "url": "https://gitlab.com/cgierke/homebridge-musiccast.git"
+        "url": "https://github.com/cgierke/homebridge-musiccast.git"
+    },
+    "bugs": {
+        "url": "https://github.com/cgierke/homebridge-musiccast/issues"
     },
     "devDependencies": {
         "@types/node": "^10.17.60",
