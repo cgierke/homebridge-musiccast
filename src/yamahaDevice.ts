@@ -48,16 +48,14 @@ export class yamahaDevice {
         if (this.serverHost) {
             this.api.publishExternalAccessories(pluginName, [volumeAccessory]);
             this.log.info(`published volumeAccessory ${this.host}`);
-            this.cache.addApiCallback(this.host, this.updateStatus.bind(this), [volumeService]);
-            this.cache.addCacheCallback(this.host, this.updateStatusFromCache.bind(this), [volumeService]);
+            this.cache.addCallback(this.host, this.updateStatus.bind(this), [volumeService]);
         } else {
             let { presetAccessory, presetService } = this.getInputPresetAccessory(pluginName);
             let { lipSyncAccessory, lipSyncService } = this.getLipSyncAccessory(pluginName);
             let { surroundDecoderAccessory, surroundDecoderService } = this.getSurroundDecoderAccessory(pluginName);
             this.api.publishExternalAccessories(pluginName, [volumeAccessory, presetAccessory, lipSyncAccessory, surroundDecoderAccessory]);
             this.log.info(`published volumeAccessory,presetAccessory,lipSyncAccessory,surroundDecoderAccessory ${this.host}`);
-            this.cache.addApiCallback(this.host, this.updateStatus.bind(this), [volumeService, presetService, lipSyncService, surroundDecoderService]);
-            this.cache.addCacheCallback(this.host, this.updateStatusFromCache.bind(this), [volumeService, presetService, lipSyncService, surroundDecoderService]);
+            this.cache.addCallback(this.host, this.updateStatus.bind(this), [volumeService, presetService, lipSyncService, surroundDecoderService]);
         }
     }
 
@@ -91,9 +89,14 @@ export class yamahaDevice {
     }
 
     private async updateStatus(volumeService?: Service, presetService?: Service, lipSyncService?: Service, surroundDecoderService?: Service) {
-        this.cache.set(this.host, 'status', await this.yamahaAPI.getStatus(this.host));
+        const lastStatus = this.cache.get(this.host, 'status');
+        const status = await this.yamahaAPI.getStatus(this.host);
+        const poweredOn = this.getCurrentPowerSwitchStatus();
+        const userActivity = JSON.stringify(lastStatus) !== JSON.stringify(status);
+        this.cache.set(this.host, 'status', status);
+        this.cache.ping(this.host, poweredOn, userActivity);
         this.updateStatusFromCache(volumeService, presetService, lipSyncService, surroundDecoderService);
-        if (presetService && this.getCurrentPowerSwitchStatus()) {
+        if (this.getCurrentPowerSwitchStatus() && presetService) {
             this.cache.set(this.host, 'playInfo', await this.yamahaAPI.getPlayInfo(this.host));
             this.updateStatusFromCache(volumeService, presetService, lipSyncService, surroundDecoderService);
         }
@@ -118,7 +121,7 @@ export class yamahaDevice {
         }
     }
 
-    private getCurrentVolumePresetId():number {
+    private getCurrentVolumePresetId(): number {
         var volume = this.cache.get(this.host, 'status').volume;
         var closest = this.volumeSteps.reduce(function (prev, curr) {
             return (Math.abs(curr.volume - volume) < Math.abs(prev.volume - volume) ? curr : prev);
@@ -126,12 +129,12 @@ export class yamahaDevice {
         return closest.id;
     }
 
-    private async getCurrentInputPresetId():Promise<number> {
+    private async getCurrentInputPresetId(): Promise<number> {
         if (this.cache.get(this.host, 'status').input == "hdmi1") {
             return 0;
         } else {
-            let playInfo:PlayInfoResponse = this.cache.get(this.host, 'playInfo');
-            if(playInfo.playback == 'play' && playInfo.track == '' && playInfo.artist == '' && playInfo.play_time == 0){
+            let playInfo: PlayInfoResponse = this.cache.get(this.host, 'playInfo');
+            if (playInfo.playback == 'play' && playInfo.track == '' && playInfo.artist == '' && playInfo.play_time == 0) {
                 // stream just started, try again (forever - but playback=play and play_time=0 cannot last long)
                 this.cache.set(this.host, 'playInfo', await this.yamahaAPI.getPlayInfo(this.host));
                 return this.getCurrentInputPresetId();
@@ -143,7 +146,7 @@ export class yamahaDevice {
                     return presetId;
                 }
             }
-            if(playInfo.playback == 'play'){
+            if (playInfo.playback == 'play') {
                 this.log.info("getCurrentInputPresetId empty", this.cache.get(this.host, 'presetInfo'), this.cache.get(this.host, 'playInfo'));
             }
             return 0;

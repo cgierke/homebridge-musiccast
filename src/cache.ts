@@ -12,53 +12,60 @@ export class cache {
     private log: Logging;
     private hosts: Set<string> = new Set();
     private cache: { [host: string]: yamahaDeviceCache } = {};
-    private apiCallbacks: { [host: string]: { callback: Function, parameters: any[] }[] } = {};
-    private cacheCallbacks: { [host: string]: { callback: Function, parameters: any[] }[] } = {};
+    private callbacks: { [host: string]: { callback: Function, parameters: any[] }[] } = {};
+    private lastUserActivity: { [host: string]: Date } = {};
+    private lastPoweredOn: { [host: string]: Date } = {};
+    private lastStatusUpdate: { [host: string]: Date } = {};
+
+    private readonly updateIntervalPoweredOff = 60 * 1000;
+    private readonly updateIntervalPoweredOn = 20 * 1000;
+    private readonly updateIntervalUserActivity = 1 * 1000;
 
     constructor(log: Logging) {
         this.log = log;
-        this.apiUpdates();
-        this.cacheUpdates();
+        this.update();
     }
-    private apiUpdates() {
-        let updateIntervalInSeconds = 15;
+    private update() {
         for (var host of this.hosts) {
-            if (host in this.apiCallbacks) {
-                for (var i in this.apiCallbacks[host]) {
-                    this.apiCallbacks[host][i].callback(...this.apiCallbacks[host][i].parameters);
-                }
+            const now = new Date().getTime();
+            if (
+                (this.lastStatusUpdate[host].getTime() <= (now - this.updateIntervalPoweredOff))
+                ||
+                ((this.lastStatusUpdate[host].getTime() <= (now - this.updateIntervalPoweredOn)) && (this.lastPoweredOn[host].getTime() >= (now - this.updateIntervalPoweredOff)))
+                ||
+                ((this.lastStatusUpdate[host].getTime() <= (now - this.updateIntervalUserActivity)) && (this.lastUserActivity[host].getTime() >= (now - this.updateIntervalPoweredOn)))
+            ) {
+                //this.log.info("host/lastUpdate/lastActivity/now", host, this.lastUpdate[host].getTime(), this.lastActivity[host].getTime(), now);
+                this.executeUpdatesForHost(host);
             }
         }
         setTimeout(async () => {
-            this.apiUpdates();
-        }, updateIntervalInSeconds * 1000)
+            this.update();
+        }, 1000)
     }
-    private cacheUpdates() {
-        let updateIntervalInSeconds = 1;
-        for (var host of this.hosts) {
-            if (host in this.cacheCallbacks) {
-                for (var i in this.cacheCallbacks[host]) {
-                    this.cacheCallbacks[host][i].callback(...this.cacheCallbacks[host][i].parameters);
-                }
-            }
+    private executeUpdatesForHost(host: string) {
+        this.lastStatusUpdate[host] = new Date();
+        for (var i in this.callbacks[host]) {
+            this.callbacks[host][i].callback(...this.callbacks[host][i].parameters);
         }
-        setTimeout(async () => {
-            this.cacheUpdates();
-        }, updateIntervalInSeconds * 1000)
     }
-    public addApiCallback(host: string, callback: Function, parameters: any[]) {
+    public addCallback(host: string, callback: Function, parameters: any[]) {
         this.hosts.add(host);
-        if (!(host in this.apiCallbacks)) {
-            this.apiCallbacks[host] = [];
+        this.lastUserActivity[host] = new Date();
+        this.lastPoweredOn[host] = new Date();
+        this.lastStatusUpdate[host] = new Date();
+        if (!(host in this.callbacks)) {
+            this.callbacks[host] = [];
         }
-        return this.apiCallbacks[host].push({ callback: callback, parameters: parameters });
+        return this.callbacks[host].push({ callback: callback, parameters: parameters });
     }
-    public addCacheCallback(host: string, callback: Function, parameters: any[]) {
-        this.hosts.add(host);
-        if (!(host in this.cacheCallbacks)) {
-            this.cacheCallbacks[host] = [];
+    public ping(host: string, poweredOn: boolean, userActivity: boolean) {
+        if (poweredOn) {
+            this.lastPoweredOn[host] = new Date();
         }
-        return this.cacheCallbacks[host].push({ callback: callback, parameters: parameters });
+        if (userActivity) {
+            this.lastUserActivity[host] = new Date();
+        }
     }
     public set(host: string, key: "presetInfo" | "status" | "playInfo" | "deviceInfo", value: any): any {
         if (!(host in this.cache)) {
