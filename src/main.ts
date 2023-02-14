@@ -27,7 +27,7 @@ class MusiccastMultiroom implements IndependentPlatformPlugin {
         const deviceCache = new cache(log);
         const yamahaApi = new yamahaAPI(log);
 
-        const server = new yamahaDevice(config.server, api, yamahaApi, log, deviceCache)
+        const server = new yamahaDevice(config.server, api, yamahaApi, log, deviceCache, undefined, config.clients);
         server.publishAccessory(PLUGIN_NAME);
 
         for (let clientHost of config.clients) {

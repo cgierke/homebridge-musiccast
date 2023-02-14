@@ -59,7 +59,7 @@ export class cache {
         }
         return this.callbacks[host].push({ callback: callback, parameters: parameters });
     }
-    public ping(host: string, poweredOn: boolean, userActivity: boolean) {
+    public ping(host: string, poweredOn?: boolean, userActivity?: boolean) {
         if (poweredOn) {
             this.lastPoweredOn[host] = new Date();
         }
