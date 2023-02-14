@@ -138,12 +138,10 @@ export class yamahaDevice {
             return 0;
         } else {
             let playInfo: PlayInfoResponse = this.cache.get(this.host, 'playInfo');
-            let presetId = 0;
             let presetInfo: PresetInfo;
             for (presetInfo of this.cache.get(this.host, 'presetInfo').preset_info) {
-                presetId++;
                 if (playInfo.playback == 'play' && (presetInfo.text == playInfo.track || presetInfo.text == playInfo.artist)) {
-                    return presetId;
+                    return presetInfo.presetId;
                 }
             }
             return undefined;
@@ -296,14 +294,11 @@ export class yamahaDevice {
             .setCharacteristic(this.api.hap.Characteristic.IsConfigured, this.api.hap.Characteristic.IsConfigured.CONFIGURED)
             .setCharacteristic(this.api.hap.Characteristic.InputSourceType, this.api.hap.Characteristic.InputSourceType.APPLICATION);
         service.addLinkedService(inputSource);
-        for (var presetInfo of this.cache.get(this.host, 'presetInfo').preset_info) {
-            presetId++;
-            if (presetId > 25) {
-                break;
-            }
-            inputSource = accessory.addService(this.api.hap.Service.InputSource, presetInfo.text, presetId.toString());
+        var presetInfo:PresetInfo;
+        for (presetInfo of this.cache.get(this.host, 'presetInfo').preset_info) {
+            inputSource = accessory.addService(this.api.hap.Service.InputSource, presetInfo.text, presetInfo.presetId.toString());
             inputSource
-                .setCharacteristic(this.api.hap.Characteristic.Identifier, presetId)
+                .setCharacteristic(this.api.hap.Characteristic.Identifier, presetInfo.presetId)
                 .setCharacteristic(this.api.hap.Characteristic.ConfiguredName, presetInfo.text)
                 .setCharacteristic(this.api.hap.Characteristic.IsConfigured, this.api.hap.Characteristic.IsConfigured.CONFIGURED)
                 .setCharacteristic(this.api.hap.Characteristic.InputSourceType, this.api.hap.Characteristic.InputSourceType.APPLICATION);

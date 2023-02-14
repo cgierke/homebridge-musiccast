@@ -26,6 +26,7 @@ export interface PresetInfoResponse {
     //func_list?: (string)[] | null;
 }
 export interface PresetInfo {
+    presetId: number;
     input: string;
     text: string;
     //attribute?: number | null;
@@ -112,7 +113,7 @@ export class yamahaAPI {
     }
 
     private async httpRequest(url: string, postData?: string) {
-        this.log.info(url);
+        this.log.debug(url);
         return new Promise((resolve, reject) => {
             const options: RequestOptions = {};
             if (postData) {
@@ -138,8 +139,8 @@ export class yamahaAPI {
             req.end();
             req.on('response', (response) => {
                 response.setEncoding('utf8');
-                let data:string = '';
-                response.on('data', (chunk:string) => {
+                let data: string = '';
+                response.on('data', (chunk: string) => {
                     data += chunk;
                 });
                 response.on('end', () => {
@@ -164,6 +165,9 @@ export class yamahaAPI {
     public async getPresetInfo(host: string): Promise<PresetInfoResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/getPresetInfo';
         let presetInfos = await this.httpRequest(url) as PresetInfoResponse;
+        for (let i = 0; i < presetInfos.preset_info.length; i++) {
+            presetInfos.preset_info[i].presetId = i+1;
+        }
         presetInfos.preset_info = presetInfos.preset_info.filter(
             function (presetInfo) {
                 return (presetInfo.input !== "unknown" && presetInfo.text !== "");
