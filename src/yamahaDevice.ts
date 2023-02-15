@@ -178,14 +178,14 @@ export class yamahaDevice {
         let playInfo: PlayInfoResponse = this.cache.get(this.config.host, 'playInfo');
         let presetInfo: PresetInfo;
         for (presetInfo of this.cache.get(this.config.host, 'presetInfo').preset_info) {
-            if (playInfo.playback == 'play' && (presetInfo.text == playInfo.track || presetInfo.text == playInfo.artist)) {
+            if (playInfo.playback == 'play' && (playInfo.input == 'server' || playInfo.input == 'net_radio') && (presetInfo.text == playInfo.track || presetInfo.text == playInfo.artist)) {
                 return presetInfo.identifier;
             }
         }
-        if (playInfo.playback == 'stop') {
-            let statusInfo: StatusResponse = this.cache.get(this.config.host, 'status');
+        let statusInfo: StatusResponse = this.cache.get(this.config.host, 'status');
+        if ((playInfo.input == statusInfo.input) || (playInfo.playback == 'stop')) {
             for (let inputConfig of this.config.inputs!) {
-                if (statusInfo.input === inputConfig.input) {
+                if (statusInfo.input == inputConfig.input) {
                     return inputConfig.identifier;
                 }
             }

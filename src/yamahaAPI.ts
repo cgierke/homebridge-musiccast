@@ -172,7 +172,7 @@ export class yamahaAPI {
         }
         presetInfos.preset_info = presetInfos.preset_info.filter(
             function (presetInfo) {
-                return (presetInfo.input !== "unknown" && presetInfo.text !== "");
+                return ((presetInfo.input == 'server' || presetInfo.input == 'net_radio') && presetInfo.text !== "");
             }
         );
         return presetInfos;
