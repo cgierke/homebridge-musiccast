@@ -26,6 +26,7 @@ export interface PresetInfoResponse {
     //func_list?: (string)[] | null;
 }
 export interface PresetInfo {
+    identifier: number,
     presetId: number;
     input: string;
     text: string;
@@ -166,7 +167,8 @@ export class yamahaAPI {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/getPresetInfo';
         let presetInfos = await this.httpRequest(url) as PresetInfoResponse;
         for (let i = 0; i < presetInfos.preset_info.length; i++) {
-            presetInfos.preset_info[i].presetId = i+1;
+            presetInfos.preset_info[i].presetId = i + 1;
+            presetInfos.preset_info[i].identifier = i + 200;
         }
         presetInfos.preset_info = presetInfos.preset_info.filter(
             function (presetInfo) {
@@ -209,6 +211,11 @@ export class yamahaAPI {
 
     public async recallPreset(host: string, preset: number): Promise<Response> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/recallPreset?zone=' + this.zone + '&num=' + preset.toString();
+        return (await this.httpRequest(url)) as Response;
+    }
+
+    public async setPlayback(host: string, playback: string): Promise<Response> {
+        const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/setPlayback?playback=' + playback;
         return (await this.httpRequest(url)) as Response;
     }
 
