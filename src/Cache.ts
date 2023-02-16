@@ -1,17 +1,18 @@
 import {
     Logging,
 } from "homebridge";
-import { DeviceInfoResponse, PlayInfoResponse, PresetInfoResponse, StatusResponse } from "./yamahaAPI";
-interface yamahaDeviceCache {
-    presetInfo?: PresetInfoResponse,
-    status?: StatusResponse,
-    playInfo?: PlayInfoResponse,
-    deviceInfo?: DeviceInfoResponse,
+import { DeviceInfoResponse, FeatureResponse, PlayInfoResponse, PresetInfoResponse, StatusResponse } from "./YamahaAPI";
+interface YamahaDeviceCache {
+    presetInfo?: PresetInfoResponse;
+    status?: StatusResponse;
+    playInfo?: PlayInfoResponse;
+    deviceInfo?: DeviceInfoResponse;
+    features?: FeatureResponse;
 }
-export class cache {
+export class Cache {
     private log: Logging;
     private hosts: Set<string> = new Set();
-    private cache: { [host: string]: yamahaDeviceCache } = {};
+    private cache: { [host: string]: YamahaDeviceCache } = {};
     private callbacks: { [host: string]: { callback: Function, parameters: any[] }[] } = {};
     private lastUserActivity: { [host: string]: Date } = {};
     private lastPoweredOn: { [host: string]: Date } = {};
@@ -67,14 +68,14 @@ export class cache {
             this.lastUserActivity[host] = new Date();
         }
     }
-    public set(host: string, key: "presetInfo" | "status" | "playInfo" | "deviceInfo", value: any): any {
+    public set(host: string, key: "presetInfo" | "status" | "playInfo" | "deviceInfo" | "features", value: any): any {
         if (!(host in this.cache)) {
             this.log.info(`cache init ${host}`);
             this.cache[host] = {};
         }
         return this.cache[host][key] = value;
     }
-    public get(host: string, key: "presetInfo" | "status" | "playInfo" | "deviceInfo"): any {
+    public get(host: string, key: "presetInfo" | "status" | "playInfo" | "deviceInfo" | "features"): any {
         if (host in this.cache && key in this.cache[host]) {
             return this.cache[host][key];
         }

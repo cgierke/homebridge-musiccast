@@ -20,12 +20,41 @@ export interface DeviceInfoResponse {
     //update_error_code: string;
     //update_data_type: number;
 }
+export interface FeatureResponse {
+    response_code: number;
+    //system: System;
+    zone: ZoneEntity[];
+    //tuner: Tuner;
+    //netusb: Netusb;
+    //distribution: Distribution;
+    //ccs: Ccs;
+}
+export interface PlayInfoResponse {
+    response_code: number;
+    input: string;
+    //play_queue_type: string;
+    playback: string;
+    //repeat: string;
+    //shuffle: string;
+    play_time: number;
+    //total_time: number;
+    artist: string;
+    album: string;
+    track: string;
+    //albumart_url: string;
+    //albumart_id: number;
+    //usb_devicetype: string;
+    //auto_stopped: boolean;
+    //attribute: number;
+    //repeat_available?: (null)[] | null;
+    //shuffle_available?: (null)[] | null;
+}
 export interface PresetInfoResponse {
     response_code: number;
-    preset_info: (PresetInfo)[];
+    preset_info: PresetInfo[];
     //func_list?: (string)[] | null;
 }
-export interface PresetInfo {
+interface PresetInfo {
     identifier: number,
     presetId: number;
     input: string;
@@ -60,51 +89,36 @@ export interface StatusResponse {
     //extra_bass: boolean;
     //adaptive_drc: boolean;
 }
-/*
-interface ToneControl {
-    mode: string;
-    bass: number;
-    treble: number;
+interface ZoneEntity {
+    id: string;
+    //func_list?: (string)[] | null;
+    //input_list?: (string)[] | null;
+    sound_program_list: (string)[];
+    //surr_decoder_type_list?: (string)[] | null;
+    //tone_control_mode_list?: (string)[] | null;
+    //link_control_list?: (string)[] | null;
+    link_audio_delay_list: (string)[];
+    //range_step?: (RangeStepEntity)[] | null;
+    //scene_num?: number | null;
+    //cursor_list?: (string)[] | null;
+    //menu_list?: (string)[] | null;
+    //actual_volume_mode_list?: (string)[] | null;
+    //ccs_supported?: (string)[] | null;
+    //zone_b?: boolean | null;
 }
-interface ActualVolume {
-    mode: string;
-    value: number;
-    unit: string;
-}
-*/
-interface ServerInfo {
+interface ServerInfoRequest {
     group_id: string;
     zone: string;
     type: string;
     client_list?: (string)[] | null;
 }
-interface ClientInfo {
+interface ClientInfoRequest {
     group_id: string;
     zone: (string)[];
     server_ip_address: string;
 }
-export interface PlayInfoResponse {
-    response_code: number;
-    input: string;
-    //play_queue_type: string;
-    playback: string;
-    //repeat: string;
-    //shuffle: string;
-    play_time: number;
-    //total_time: number;
-    artist: string;
-    album: string;
-    track: string;
-    //albumart_url: string;
-    //albumart_id: number;
-    //usb_devicetype: string;
-    //auto_stopped: boolean;
-    //attribute: number;
-    //repeat_available?: (null)[] | null;
-    //shuffle_available?: (null)[] | null;
-}
 
-export class yamahaAPI {
+export class YamahaAPI {
     private readonly log: Logging;
     private readonly groupId: string = "00112233445566778899aabbccddeeff";
     private readonly zone: string = "main";
@@ -163,6 +177,16 @@ export class yamahaAPI {
         return (await this.httpRequest(url)) as DeviceInfoResponse;
     }
 
+    public async getFeatures(host: string): Promise<FeatureResponse> {
+        const url = 'http://' + host + '/YamahaExtendedControl/v1/system/getFeatures';
+        return (await this.httpRequest(url)) as FeatureResponse;
+    }
+
+    public async getPlayInfo(host: string): Promise<PlayInfoResponse> {
+        const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/getPlayInfo';
+        return (await this.httpRequest(url)) as PlayInfoResponse;
+    }
+
     public async getPresetInfo(host: string): Promise<PresetInfoResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/getPresetInfo';
         let presetInfos = await this.httpRequest(url) as PresetInfoResponse;
@@ -172,21 +196,10 @@ export class yamahaAPI {
         }
         presetInfos.preset_info = presetInfos.preset_info.filter(
             function (presetInfo) {
-                return ((presetInfo.input == 'server' || presetInfo.input == 'net_radio') && presetInfo.text !== "");
+                return ((presetInfo.input === 'server' || presetInfo.input === 'net_radio') && presetInfo.text !== "");
             }
         );
         return presetInfos;
-    }
-
-    public async setInput(host: string, input: string): Promise<Response> {
-        const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setInput?input=' + input;
-        return (await this.httpRequest(url)) as Response;
-    }
-
-    public async setPower(host: string, power: number): Promise<Response> {
-        let parameter = (power == 1) ? "on" : "standby";
-        const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setPower?power=' + parameter;
-        return (await this.httpRequest(url)) as Response;
     }
 
     public async getStatus(host: string): Promise<StatusResponse> {
@@ -194,9 +207,9 @@ export class yamahaAPI {
         return (await this.httpRequest(url)) as StatusResponse;
     }
 
-    public async setVolume(host: string, volume: number): Promise<StatusResponse> {
-        const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setVolume?volume=' + volume;
-        return (await this.httpRequest(url)) as StatusResponse;
+    public async setInput(host: string, input: string): Promise<Response> {
+        const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setInput?input=' + input;
+        return (await this.httpRequest(url)) as Response;
     }
 
     public async setLinkAudioDelay(host: string, delay: string): Promise<Response> {
@@ -209,19 +222,25 @@ export class yamahaAPI {
         return (await this.httpRequest(url)) as Response;
     }
 
-    public async recallPreset(host: string, preset: number): Promise<Response> {
-        const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/recallPreset?zone=' + this.zone + '&num=' + preset.toString();
-        return (await this.httpRequest(url)) as Response;
-    }
-
     public async setPlayback(host: string, playback: string): Promise<Response> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/setPlayback?playback=' + playback;
         return (await this.httpRequest(url)) as Response;
     }
 
-    public async getPlayInfo(host: string): Promise<PlayInfoResponse> {
-        const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/getPlayInfo';
-        return (await this.httpRequest(url)) as PlayInfoResponse;
+    public async setPower(host: string, power: number): Promise<Response> {
+        let parameter = (power === 1) ? "on" : "standby";
+        const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setPower?power=' + parameter;
+        return (await this.httpRequest(url)) as Response;
+    }
+
+    public async setVolume(host: string, volume: number): Promise<StatusResponse> {
+        const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setVolume?volume=' + volume;
+        return (await this.httpRequest(url)) as StatusResponse;
+    }
+
+    public async recallPreset(host: string, preset: number): Promise<Response> {
+        const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/recallPreset?zone=' + this.zone + '&num=' + preset.toString();
+        return (await this.httpRequest(url)) as Response;
     }
 
     public async startDistribution(host: string): Promise<StatusResponse> {
@@ -231,7 +250,7 @@ export class yamahaAPI {
 
     public async setClientInfo(clientHost: string, serverHost: string): Promise<StatusResponse> {
         const url = 'http://' + clientHost + '/YamahaExtendedControl/v1/dist/setClientInfo';
-        const clientInfo: ClientInfo = {
+        const clientInfo: ClientInfoRequest = {
             group_id: this.groupId,
             zone: [this.zone],
             server_ip_address: serverHost
@@ -241,7 +260,7 @@ export class yamahaAPI {
 
     public async setServerInfo(clientHost: string, serverHost: string): Promise<StatusResponse> {
         const url = 'http://' + serverHost + '/YamahaExtendedControl/v1/dist/setServerInfo';
-        const serverInfo: ServerInfo = {
+        const serverInfo: ServerInfoRequest = {
             group_id: this.groupId,
             zone: this.zone,
             type: "add",

@@ -2,23 +2,52 @@
     "pluginAlias": "MusiccastMultiroom",
     "pluginType": "platform",
     "singular": true,
+    "headerDisplay": "Musiccast Multiroom Plugin enables favorite presets, input source selection and power/volume vontrol within the Apple Home app. Speakers will always be linked to their MusicCast server.",
+    "footerDisplay": "https://gitlab.com/cgierke/homebridge-musiccast",
     "schema": {
         "type": "object",
         "properties": {
-            "platform": {
-                "type": "string"
-            },
             "server": {
+                "title": "Server",
+                "description": "The IP address of your Yamaha Receiver (or your main MusicCast device) who will serve music to the clients.",
                 "type": "string",
                 "required": true,
                 "default": "192.0.2.11"
             },
             "clients": {
+                "title": "Clients",
+                "description": "The IP addresses of your Yamaha speakers (or other MusicCast devices) who will be connected to the server.",
                 "type": "array",
                 "items": {
+                    "title": "Client",
+                    "description": "IP address",
                     "type": "string",
-                    "false": true,
+                    "required": true,
                     "default": "192.0.2.22"
+                }
+            },
+            "inputs": {
+                "title": "Inputs",
+                "description": "All favorite presets (set on the server with the MusicCast app) will automatically be avaiable as inputs. Do you want additional input sources to be available?",
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "input": {
+                            "title": "Input",
+                            "description": "For example 'hdmi1', 'airplay' etc.",
+                            "type": "string",
+                            "required": true,
+                            "default": "hdmi1"
+                        },
+                        "name": {
+                            "title": "Name",
+                            "description": "For example 'TV', 'Airplay' etc.",
+                            "type": "string",
+                            "required": true,
+                            "default": "Apple TV"
+                        }
+                    }
                 }
             }
         }
