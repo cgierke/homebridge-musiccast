@@ -8,44 +8,90 @@
         "type": "object",
         "properties": {
             "server": {
-                "title": "Server",
-                "description": "The IP address of your Yamaha Receiver (or your main MusicCast device) who will serve music to the clients.",
-                "type": "string",
-                "required": true,
-                "default": "192.0.2.11"
+                "type": "object",
+                "properties": {
+                    "host": {
+                        "title": "IP address/hostname",
+                        "description": "The IP address or hostname of your Yamaha Receiver (or your main MusicCast device) who will serve music to the clients.",
+                        "type": "string",
+                        "required": true,
+                        "default": "192.0.2.11"
+                    },
+                    "volumePercentageLow": {
+                        "title": "Lower volume limit (0-100%)",
+                        "description": "Recommended: 25 (Volume can be adjusted in 6 steps between low and high.)",
+                        "type": "number",
+                        "required": true,
+                        "minimum": 0,
+                        "maximum": 100,
+                        "default": "25"
+                    },
+                    "volumePercentageHigh": {
+                        "title": "Upper volume limit (0-100%)",
+                        "description": "Recommended: 65 (Volume can be adjusted in 6 steps between low and high.)",
+                        "type": "number",
+                        "required": true,
+                        "minimum": 0,
+                        "maximum": 100,
+                        "default": "65"
+                    },
+                    "inputs": {
+                        "title": "Inputs",
+                        "description": "All favorite presets (set on the server with the MusicCast app) will automatically be avaiable as inputs. Do you want additional input sources to be available?",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "input": {
+                                    "title": "Input",
+                                    "description": "For example 'hdmi1', 'airplay' etc.",
+                                    "type": "string",
+                                    "required": true,
+                                    "default": "hdmi1"
+                                },
+                                "name": {
+                                    "title": "Name",
+                                    "description": "For example 'TV', 'Airplay' etc.",
+                                    "type": "string",
+                                    "required": true,
+                                    "default": "Apple TV"
+                                }
+                            }
+                        }
+                    }
+                }
             },
             "clients": {
                 "title": "Clients",
                 "description": "The IP addresses of your Yamaha speakers (or other MusicCast devices) who will be connected to the server.",
                 "type": "array",
                 "items": {
-                    "title": "Client",
-                    "description": "IP address",
-                    "type": "string",
-                    "required": true,
-                    "default": "192.0.2.22"
-                }
-            },
-            "inputs": {
-                "title": "Inputs",
-                "description": "All favorite presets (set on the server with the MusicCast app) will automatically be avaiable as inputs. Do you want additional input sources to be available?",
-                "type": "array",
-                "items": {
                     "type": "object",
                     "properties": {
-                        "input": {
-                            "title": "Input",
-                            "description": "For example 'hdmi1', 'airplay' etc.",
+                        "host": {
+                            "title": "IP address/hostname",
+                            "description": "IP address or hostname",
                             "type": "string",
                             "required": true,
-                            "default": "hdmi1"
+                            "default": "192.0.2.22"
                         },
-                        "name": {
-                            "title": "Name",
-                            "description": "For example 'TV', 'Airplay' etc.",
-                            "type": "string",
+                        "volumePercentageLow": {
+                            "title": "Lower volume limit (0-100%)",
+                            "description": "Recommended: 25 (Volume can be adjusted in 6 steps between low and high.)",
+                            "type": "number",
                             "required": true,
-                            "default": "Apple TV"
+                            "minimum": 0,
+                            "maximum": 100,
+                            "default": "25"
+                        },
+                        "volumePercentageHigh": {
+                            "title": "Upper volume limit (0-100%)",
+                            "description": "Recommended: 65 (Volume can be adjusted in 6 steps between low and high.)",
+                            "type": "number",
+                            "required": true,
+                            "minimum": 0,
+                            "maximum": 100,
+                            "default": "65"
                         }
                     }
                 }

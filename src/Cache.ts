@@ -10,13 +10,13 @@ interface YamahaDeviceCache {
     features?: FeatureResponse;
 }
 export class Cache {
-    private log: Logging;
-    private hosts: Set<string> = new Set();
-    private cache: { [host: string]: YamahaDeviceCache } = {};
-    private callbacks: { [host: string]: { callback: Function, parameters: any[] }[] } = {};
-    private lastUserActivity: { [host: string]: Date } = {};
-    private lastPoweredOn: { [host: string]: Date } = {};
-    private lastStatusUpdate: { [host: string]: Date } = {};
+    private readonly log: Logging;
+    private readonly hosts: Set<string> = new Set();
+    private readonly cache: { [host: string]: YamahaDeviceCache } = {};
+    private readonly callbacks: { [host: string]: { callback: Function, parameters: any[] }[] } = {};
+    private readonly lastUserActivity: { [host: string]: Date } = {};
+    private readonly lastPoweredOn: { [host: string]: Date } = {};
+    private readonly lastStatusUpdate: { [host: string]: Date } = {};
 
     private readonly updateIntervalPoweredOff = 60 * 1000;
     private readonly updateIntervalPoweredOn = 20 * 1000;
@@ -36,7 +36,6 @@ export class Cache {
                 ||
                 ((this.lastStatusUpdate[host].getTime() <= (now - this.updateIntervalUserActivity)) && (this.lastUserActivity[host].getTime() >= (now - this.updateIntervalPoweredOn)))
             ) {
-                //this.log.info("host/lastUpdate/lastActivity/now", host, this.lastUpdate[host].getTime(), this.lastActivity[host].getTime(), now);
                 this.executeUpdatesForHost(host);
             }
         }
@@ -46,7 +45,7 @@ export class Cache {
     }
     private executeUpdatesForHost(host: string) {
         this.lastStatusUpdate[host] = new Date();
-        for (var i in this.callbacks[host]) {
+        for (let i in this.callbacks[host]) {
             this.callbacks[host][i].callback(...this.callbacks[host][i].parameters);
         }
     }
@@ -70,7 +69,6 @@ export class Cache {
     }
     public set(host: string, key: "presetInfo" | "status" | "playInfo" | "deviceInfo" | "features", value: any): any {
         if (!(host in this.cache)) {
-            this.log.info(`cache init ${host}`);
             this.cache[host] = {};
         }
         return this.cache[host][key] = value;
@@ -79,6 +77,6 @@ export class Cache {
         if (host in this.cache && key in this.cache[host]) {
             return this.cache[host][key];
         }
-        this.log.info(`cache not found ${host} ${key}`);
+        this.log.error(`cache not found ${host} ${key}`);
     }
 }

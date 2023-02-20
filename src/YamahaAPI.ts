@@ -120,11 +120,21 @@ interface ClientInfoRequest {
 
 export class YamahaAPI {
     private readonly log: Logging;
-    private readonly groupId: string = "00112233445566778899aabbccddeeff";
+    private readonly groupId: string;
     private readonly zone: string = "main";
 
     constructor(log: Logging) {
         this.log = log;
+        this.groupId = this.generateRandomHexString(32);
+    }
+
+    private generateRandomHexString(length: number): string {
+        let result = '';
+        const characters = '0123456789abcdef';
+        for (let i = 0; i < length; i++) {
+            result += characters[Math.floor(Math.random() * characters.length)];
+        }
+        return result;
     }
 
     private async httpRequest(url: string, postData?: string) {
