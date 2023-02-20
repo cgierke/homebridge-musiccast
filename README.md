@@ -1,9 +1,3 @@
-
-<p align="center">
-    <img src="https://github.com/homebridge/branding/raw/master/logos/homebridge-wordmark-logo-vertical.png" width="150">
-</p>
-
-
 # Homebridge Yamaha MusicCast Multiroom Plugin
 
 Official MusicCast support in Apple HomeKit is limited. This plugin provides quick access to favorite presets, input source selection and power/volume vontrol within the Apple Home app. Speakers will always be linked to their MusicCast server.
@@ -38,7 +32,7 @@ Configuration:
 
 ## Volume
 
-The current Apple Home app doesn't really support volume for speakers and receivers, so the source selector is misused to quickly adjust volume in 6 steps.
+The current Apple Home app doesn't really support volume for speakers and receivers, so the source selector is "misused" to quickly adjust volume in 6 steps.
 
 <img src="https://gitlab.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-volume.png" width="550">
 
@@ -67,7 +61,7 @@ Lower and upper volume limits can be adjusted in the settings for each device. S
 
 ## Input Sources
 
-For the server device, a separate accessory will be published to select the input source. It will provide all favorites saved on the device. Use the Yamaha MusicCast app to save, edit and order favorites.
+For the server device, there will be a separate accessory to select the input source. It will provide all favorites saved on the device. Use the Yamaha MusicCast app to save, edit and order favorites.
 
 <img src="https://gitlab.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-presets.png" width="550">
 
@@ -95,6 +89,36 @@ Additional inputs like HDMI can be added and named in the settings:
     "platform": "MusiccastMultiroom"
 }
 ```
+Input sources that provide their own content (like Amazon Music, Net Radio, Spotify, etc.) are more useful when specific playlists or stations are saved as favorites in the Yamaha MusicCast app. Those will then be availabe in HomeKit.
+
+Available input sources for a Yamaha receiver include for example:
+```
+airplay
+alexa
+amazon_music
+audio1
+audio2
+audio3
+aux
+av1
+av2
+av3
+bluetooth
+deezer
+hdmi1
+hdmi2
+hdmi3
+hdmi4
+mc_link
+napster
+net_radio
+qobuz
+server
+spotify
+tidal
+tuner
+usb
+```
 
 ---
 
@@ -108,8 +132,8 @@ When supported by the server device, up to two additional switches will be publi
   - on: set sound program to `Surround Decoder`
   - off: set sound program to `Straight`
 - Lip Sync:
-  - on: set link audio delay to `Lip Sync`, which prefers lipsync between audio and hdmi video (and maybe cause delay between connected speakers)
-  - off: set link audio delay to `Audio Sync` prefer audio sync between all connected spearkers (and maybe cause delay between audio and hdmi video)
+  - on: set link audio delay to `Lip Sync`, which prefers lipsync between audio and hdmi video (and may cause delays between connected speakers)
+  - off: set link audio delay to `Audio Sync`, which prefers audio sync between all connected spearkers (and may cause delays between audio and hdmi video)
 
 ---
 
