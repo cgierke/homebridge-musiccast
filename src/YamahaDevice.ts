@@ -251,7 +251,9 @@ export class YamahaDevice {
         const presetInfos: PresetInfoResponse = this.cache.get(this.config.host, 'presetInfo');
         for (let presetInfo of presetInfos.preset_info) {
             if (presetInfo.identifier === identifier) {
-                await this.yamahaAPI.setPlayback(this.config.host, 'pause');
+                if (this.getCurrentInputPresetId() !== identifier) {
+                    await this.yamahaAPI.setPlayback(this.config.host, 'pause');
+                }
                 await this.yamahaAPI.recallPreset(this.config.host, presetInfo.presetId as number);
             }
         }
