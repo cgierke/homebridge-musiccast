@@ -139,47 +139,46 @@ export class YamahaAPI {
 
     private async httpRequest(url: string, postData?: string) {
         this.log.debug(url);
-        return new Promise((resolve, reject) => {
-            const options: RequestOptions = {};
-            if (postData) {
-                options.method = "POST";
-                options.headers = {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Content-Length': Buffer.byteLength(postData),
-                };
-            } else {
-                options.method = "GET";
-                options.headers = {
-                    'Accept': 'application/json',
+        try {
+            return new Promise((resolve, reject) => {
+                const options: RequestOptions = {};
+                if (postData) {
+                    options.method = "POST";
+                    options.headers = {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(postData),
+                    };
+                } else {
+                    options.method = "GET";
+                    options.headers = {
+                        'Accept': 'application/json',
+                    }
                 }
-            }
-            const req: ClientRequest = request(url, options);
-            req.on('error', (error) => {
-                reject(error);
-            });
-            if (postData) {
-                req.write(postData);
-            }
-            req.end();
-            req.on('response', (response) => {
-                response.setEncoding('utf8');
-                let data: string = '';
-                response.on('data', (chunk: string) => {
-                    data += chunk;
+                const req: ClientRequest = request(url, options);
+                req.on('error', (error) => {
+                    reject(error);
                 });
-                response.on('end', () => {
-                    try {
+                if (postData) {
+                    req.write(postData);
+                }
+                req.end();
+                req.on('response', (response) => {
+                    response.setEncoding('utf8');
+                    let data: string = '';
+                    response.on('data', (chunk: string) => {
+                        data += chunk;
+                    });
+                    response.on('end', () => {
                         const result = JSON.parse(data);
                         this.log.debug("httpRequest result", result);
                         resolve(result);
-                    } catch (error) {
-                        this.log.error("httpRequest error", error);
-                        reject(error);
-                    }
+                    });
                 });
             });
-        });
+        } catch (error) {
+            this.log.error("httpRequest error", error);
+        }
     }
 
     public async getDeviceInfo(host: string): Promise<DeviceInfoResponse> {

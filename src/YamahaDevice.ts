@@ -66,12 +66,15 @@ export class YamahaDevice {
         this.log = log;
         this.yamahaAPI = yamahaAPI;
         if (!config.serverHost) {
-            if (this.config.inputs) {
+            if (this.config.inputs !== undefined) {
                 for (let i = 0; i < this.config.inputs.length; i++) {
                     this.config.inputs[i].identifier = i + 100;
                 }
             } else {
                 this.config.inputs = [];
+            }
+            if (this.config.clients === undefined) {
+                this.config.clients = [];
             }
         }
     }
@@ -318,7 +321,7 @@ export class YamahaDevice {
                 if (active === this.api.hap.Characteristic.Active.ACTIVE && this.config.serverHost) {
                     this.linkWithHost();
                 }
-                if (active === this.api.hap.Characteristic.Active.INACTIVE && this.config.clients) {
+                if (active === this.api.hap.Characteristic.Active.INACTIVE) {
                     this.powerOffClients();
                 }
             });
@@ -364,7 +367,7 @@ export class YamahaDevice {
                 if (active === this.api.hap.Characteristic.Active.ACTIVE && this.config.serverHost) {
                     this.linkWithHost();
                 }
-                if (active === this.api.hap.Characteristic.Active.INACTIVE && this.config.clients) {
+                if (active === this.api.hap.Characteristic.Active.INACTIVE) {
                     this.powerOffClients();
                 }
             });
