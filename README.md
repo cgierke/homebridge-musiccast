@@ -1,6 +1,6 @@
-# Homebridge Yamaha MusicCast Multiroom Plugin
+# Homebridge Yamaha MusicCast Multiroom Plugin [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
-Official MusicCast support in Apple HomeKit is limited. This plugin provides quick access to favorite presets, input source selection and power/volume vontrol within the Apple Home app. Speakers will always be linked to their MusicCast server.
+Official MusicCast support in Apple HomeKit is limited. This plugin provides quick access to favorite presets, input source selection and power/volume control within the Apple Home app. Speakers will always be linked to their MusicCast server.
 
 <img src="https://gitlab.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-accessories.png" width="550">
 
@@ -129,11 +129,11 @@ When supported by the server device, up to two additional switches will be publi
 <img src="https://gitlab.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-switches.png" width="550">
 
 - Surround Decoder:
-  - on: set sound program to `Surround Decoder`
-  - off: set sound program to `Straight`
+  - `on`: set sound program to `Surround Decoder`
+  - `off`: set sound program to `Straight`
 - Lip Sync:
-  - on: set link audio delay to `Lip Sync`, which prefers lipsync between audio and hdmi video (and may cause delays between connected speakers)
-  - off: set link audio delay to `Audio Sync`, which prefers audio sync between all connected spearkers (and may cause delays between audio and hdmi video)
+  - `on`: set link audio delay to `Lip Sync`, which prefers lipsync between audio and hdmi video (and may cause delays between connected speakers)
+  - `off`: set link audio delay to `Audio Sync`, which prefers audio sync between all connected speakers (and may cause delays between audio and hdmi video)
 
 ---
 

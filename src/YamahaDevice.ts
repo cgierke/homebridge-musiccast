@@ -85,19 +85,23 @@ export class YamahaDevice {
         let services: StatusServices = {};
 
         let { volumeAccessory, volumeService } = this.getVolumeAccessory(pluginName);
+        this.log.info("publishing accessory " + volumeAccessory.displayName);
         accessories.push(volumeAccessory);
         services.volumeService = volumeService;
         if (!this.config.serverHost) {
             let { presetAccessory, presetService } = this.getInputPresetAccessory(pluginName, this.config.inputs!);
+            this.log.info("publishing accessory " + presetAccessory.displayName);
             accessories.push(presetAccessory);
             services.presetService = presetService;
             if (this.shouldPublishLipSyncSwitch()) {
                 let { lipSyncAccessory, lipSyncService } = this.getLipSyncAccessory(pluginName);
+                this.log.info("publishing accessory " + lipSyncAccessory.displayName);
                 accessories.push(lipSyncAccessory);
                 services.lipSyncService = lipSyncService;
             }
             if (this.shouldPublishSurroundDecoderSwitch()) {
                 let { surroundDecoderAccessory, surroundDecoderService } = this.getSurroundDecoderAccessory(pluginName);
+                this.log.info("publishing accessory " + surroundDecoderAccessory.displayName);
                 accessories.push(surroundDecoderAccessory);
                 services.surroundDecoderService = surroundDecoderService;
             }

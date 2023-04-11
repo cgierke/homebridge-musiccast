@@ -17,6 +17,7 @@ export = (api: API) => {
 
 interface MusiccastMultiroomConfig {
     platform: string;
+    name: string;
     server: {
         host: string;
         volumePercentageLow?: number;

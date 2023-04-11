@@ -2,11 +2,18 @@
     "pluginAlias": "MusiccastMultiroom",
     "pluginType": "platform",
     "singular": true,
-    "headerDisplay": "Musiccast Multiroom Plugin enables favorite presets, input source selection and power/volume vontrol within the Apple Home app. Speakers will always be linked to their MusicCast server.",
+    "headerDisplay": "Musiccast Multiroom Plugin enables favorite presets, input source selection and power/volume control within the Apple Home app. Speakers will always be linked to their MusicCast server.",
     "footerDisplay": "https://gitlab.com/cgierke/homebridge-musiccast/blob/main/README.md",
     "schema": {
         "type": "object",
         "properties": {
+            "name": {
+                "title": "Plugin name",
+                "description": "Plugin name as shown in Homebridge Log",
+                "type": "string",
+                "required": true,
+                "default": "MusiccastMultiroom"
+            },
             "server": {
                 "type": "object",
                 "properties": {
@@ -37,7 +44,7 @@
                     },
                     "inputs": {
                         "title": "Inputs",
-                        "description": "All favorite presets (set on the server with the MusicCast app) will automatically be avaiable as inputs. Do you want additional input sources to be available?",
+                        "description": "All favorite presets (set on the server with the MusicCast app) will automatically be available as inputs. Do you want additional input sources to be available?",
                         "type": "array",
                         "items": {
                             "type": "object",
