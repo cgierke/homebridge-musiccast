@@ -67,12 +67,12 @@ interface Response {
 export interface StatusResponse {
     response_code: number;
     power: string;
-    //sleep: number;
+    sleep: number;
     volume: number;
     mute: boolean;
     max_volume: number;
     input: string;
-    input_text: string;
+    input_text?: string;
     distribution_enable: boolean;
     sound_program: string;
     //surr_decoder_type: string;
@@ -93,11 +93,11 @@ interface ZoneEntity {
     id: string;
     //func_list?: (string)[] | null;
     //input_list?: (string)[] | null;
-    sound_program_list: (string)[];
+    sound_program_list?: (string)[];
     //surr_decoder_type_list?: (string)[] | null;
     //tone_control_mode_list?: (string)[] | null;
     //link_control_list?: (string)[] | null;
-    link_audio_delay_list: (string)[];
+    link_audio_delay_list?: (string)[];
     //range_step?: (RangeStepEntity)[] | null;
     //scene_num?: number | null;
     //cursor_list?: (string)[] | null;
