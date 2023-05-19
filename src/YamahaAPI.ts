@@ -72,7 +72,7 @@ export interface StatusResponse {
     mute: boolean;
     max_volume: number;
     input: string;
-    input_text?: string;
+    input_text: string;
     distribution_enable: boolean;
     sound_program: string;
     //surr_decoder_type: string;
