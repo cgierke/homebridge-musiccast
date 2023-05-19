@@ -67,7 +67,7 @@ interface Response {
 export interface StatusResponse {
     response_code: number;
     power: string;
-    sleep: number;
+    //sleep: number;
     volume: number;
     mute: boolean;
     max_volume: number;
