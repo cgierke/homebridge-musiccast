@@ -93,11 +93,11 @@ interface ZoneEntity {
     id: string;
     //func_list?: (string)[] | null;
     //input_list?: (string)[] | null;
-    sound_program_list: (string)[];
+    sound_program_list?: (string)[];
     //surr_decoder_type_list?: (string)[] | null;
     //tone_control_mode_list?: (string)[] | null;
     //link_control_list?: (string)[] | null;
-    link_audio_delay_list: (string)[];
+    link_audio_delay_list?: (string)[];
     //range_step?: (RangeStepEntity)[] | null;
     //scene_num?: number | null;
     //cursor_list?: (string)[] | null;

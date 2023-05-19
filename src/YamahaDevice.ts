@@ -154,7 +154,7 @@ export class YamahaDevice {
         const mainZone = features.zone.find(function (zone) {
             return zone.id === 'main';
         });
-        if (mainZone && mainZone.link_audio_delay_list.includes("lip_sync") && mainZone.link_audio_delay_list.includes("audio_sync")) {
+        if (mainZone && mainZone.link_audio_delay_list?.includes("lip_sync") && mainZone.link_audio_delay_list.includes("audio_sync")) {
             return true;
         }
         return false;
@@ -165,7 +165,7 @@ export class YamahaDevice {
         const mainZone = features.zone.find(function (zone) {
             return zone.id === 'main';
         });
-        if (mainZone && mainZone.sound_program_list.includes("surr_decoder") && mainZone.sound_program_list.includes("straight")) {
+        if (mainZone && mainZone.sound_program_list?.includes("surr_decoder") && mainZone.sound_program_list.includes("straight")) {
             return true;
         }
         return false;
