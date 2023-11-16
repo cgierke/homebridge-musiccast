@@ -157,7 +157,7 @@ export class YamahaAPI {
                 }
                 const req: ClientRequest = request(url, options);
                 req.on('error', (error) => {
-                    reject(error);
+                    this.log.error("httpRequest error", error);
                 });
                 if (postData) {
                     req.write(postData);
