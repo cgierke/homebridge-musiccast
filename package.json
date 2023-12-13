@@ -1,6 +1,6 @@
 {
     "name": "homebridge-musiccast-multiroom",
-    "version": "0.2.5",
+    "version": "0.2.6",
     "description": "Homebridge Yamaha MusicCast Multiroom Plugin",
     "main": "dist/main.js",
     "scripts": {

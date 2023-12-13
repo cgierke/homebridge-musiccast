@@ -143,7 +143,7 @@ export class YamahaDevice {
                 label += this.volumeCharacterInactive;
             }
             let volume = Math.round(volumeLow + (volumeStep * i));
-            let step: VolumeStep = { id: i, label: label, volume: volume }
+            let step: VolumeStep = { id: i + 1, label: label, volume: volume }
             steps.push(step);
         }
         return steps;
@@ -348,6 +348,8 @@ export class YamahaDevice {
                 .setCharacteristic(this.api.hap.Characteristic.InputSourceType, this.api.hap.Characteristic.InputSourceType.APPLICATION);
             service.addLinkedService(inputSource);
         }
+        const displayOrder = this.volumeSteps.map(step => step.id);
+        service.setCharacteristic(this.api.hap.Characteristic.DisplayOrder, this.api.hap.encode(1, displayOrder).toString('base64'));
         return { volumeAccessory: accessory, volumeService: service };
     }
 
@@ -404,6 +406,8 @@ export class YamahaDevice {
                 .setCharacteristic(this.api.hap.Characteristic.InputSourceType, this.api.hap.Characteristic.InputSourceType.APPLICATION);
             service.addLinkedService(inputSource);
         }
+        const displayOrder = inputConfigs.map(inputConfig => inputConfig.identifier).concat(presetInfos.preset_info.map(presetInfo => presetInfo.identifier));
+        service.setCharacteristic(this.api.hap.Characteristic.DisplayOrder, this.api.hap.encode(1, displayOrder).toString('base64'));
         return { presetAccessory: accessory, presetService: service };
     }
 
