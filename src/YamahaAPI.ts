@@ -59,6 +59,7 @@ interface PresetInfo {
     presetId: number;
     input: string;
     text: string;
+    displayText: string;
     //attribute?: number | null;
 }
 interface Response {
@@ -122,19 +123,12 @@ export class YamahaAPI {
     private readonly log: Logging;
     private readonly groupId: string;
     private readonly zone: string = "main";
+    private readonly presetInfoRegex?: RegExp;
 
-    constructor(log: Logging) {
+    constructor(log: Logging, groupId: string, presetInfoRegex?: RegExp) {
         this.log = log;
-        this.groupId = this.generateRandomHexString(32);
-    }
-
-    private generateRandomHexString(length: number): string {
-        let result = '';
-        const characters = '0123456789abcdef';
-        for (let i = 0; i < length; i++) {
-            result += characters[Math.floor(Math.random() * characters.length)];
-        }
-        return result;
+        this.groupId = groupId;
+        this.presetInfoRegex = presetInfoRegex;
     }
 
     private async httpRequest(url: string, postData?: string) {
@@ -202,6 +196,10 @@ export class YamahaAPI {
         for (let i = 0; i < presetInfos.preset_info.length; i++) {
             presetInfos.preset_info[i].presetId = i + 1;
             presetInfos.preset_info[i].identifier = i + 200;
+            presetInfos.preset_info[i].displayText = presetInfos.preset_info[i].text;
+            if (this.presetInfoRegex !== undefined) {
+                presetInfos.preset_info[i].displayText = presetInfos.preset_info[i].displayText.replace(this.presetInfoRegex, '').trim();
+            }
         }
         presetInfos.preset_info = presetInfos.preset_info.filter(
             function (presetInfo) {

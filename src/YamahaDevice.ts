@@ -172,15 +172,22 @@ export class YamahaDevice {
     }
 
     private async updateStatus(services: StatusServices) {
+        var status: StatusResponse;
+        if (this.getCurrentPowerSwitchStatus() && services.presetService) {
+            var playInfo: PlayInfoResponse;
+            [status, playInfo] = await Promise.all([
+                this.yamahaAPI.getStatus(this.config.host),
+                this.yamahaAPI.getPlayInfo(this.config.host)
+            ]);
+            this.cache.set(this.config.host, 'playInfo', playInfo);
+        } else {
+            status = await this.yamahaAPI.getStatus(this.config.host);
+        }
         const lastStatus: StatusResponse = this.cache.get(this.config.host, 'status');
-        const status = await this.yamahaAPI.getStatus(this.config.host);
         const poweredOn = this.getCurrentPowerSwitchStatus();
         const userActivity = JSON.stringify(lastStatus) !== JSON.stringify(status);
         this.cache.set(this.config.host, 'status', status);
         this.cache.ping(this.config.host, poweredOn, userActivity);
-        if (this.getCurrentPowerSwitchStatus() && services.presetService) {
-            this.cache.set(this.config.host, 'playInfo', await this.yamahaAPI.getPlayInfo(this.config.host));
-        }
         this.updateStatusFromCache(services);
     }
 
@@ -215,19 +222,17 @@ export class YamahaDevice {
     }
 
     private getCurrentInputPresetId(): number | undefined {
+        const statusInfo: StatusResponse = this.cache.get(this.config.host, 'status');
+        for (let inputConfig of this.config.inputs!) {
+            if (statusInfo.input === inputConfig.input) {
+                return inputConfig.identifier;
+            }
+        }
         const playInfo: PlayInfoResponse = this.cache.get(this.config.host, 'playInfo');
         const presetInfos: PresetInfoResponse = this.cache.get(this.config.host, 'presetInfo');
         for (let presetInfo of presetInfos.preset_info) {
-            if (playInfo.playback === 'play' && (playInfo.input === 'server' || playInfo.input === 'net_radio') && (presetInfo.text === playInfo.track || presetInfo.text === playInfo.artist)) {
+            if ((playInfo.input === 'server' || playInfo.input === 'net_radio') && (presetInfo.text === playInfo.track || presetInfo.text === playInfo.artist)) {
                 return presetInfo.identifier;
-            }
-        }
-        const statusInfo: StatusResponse = this.cache.get(this.config.host, 'status');
-        if ((playInfo.input === statusInfo.input) || (playInfo.playback === 'stop')) {
-            for (let inputConfig of this.config.inputs!) {
-                if (statusInfo.input === inputConfig.input) {
-                    return inputConfig.identifier;
-                }
             }
         }
         return undefined;
@@ -258,9 +263,6 @@ export class YamahaDevice {
         const presetInfos: PresetInfoResponse = this.cache.get(this.config.host, 'presetInfo');
         for (let presetInfo of presetInfos.preset_info) {
             if (presetInfo.identifier === identifier) {
-                if (this.getCurrentInputPresetId() !== identifier) {
-                    await this.yamahaAPI.setPlayback(this.config.host, 'pause');
-                }
                 await this.yamahaAPI.recallPreset(this.config.host, presetInfo.presetId as number);
             }
         }
@@ -398,10 +400,10 @@ export class YamahaDevice {
         }
         const presetInfos: PresetInfoResponse = this.cache.get(this.config.host, 'presetInfo');
         for (let presetInfo of presetInfos.preset_info) {
-            let inputSource = accessory.addService(this.api.hap.Service.InputSource, presetInfo.text, presetInfo.identifier.toString());
+            let inputSource = accessory.addService(this.api.hap.Service.InputSource, presetInfo.displayText, presetInfo.identifier.toString());
             inputSource
                 .setCharacteristic(this.api.hap.Characteristic.Identifier, presetInfo.identifier)
-                .setCharacteristic(this.api.hap.Characteristic.ConfiguredName, presetInfo.text)
+                .setCharacteristic(this.api.hap.Characteristic.ConfiguredName, presetInfo.displayText)
                 .setCharacteristic(this.api.hap.Characteristic.IsConfigured, this.api.hap.Characteristic.IsConfigured.CONFIGURED)
                 .setCharacteristic(this.api.hap.Characteristic.InputSourceType, this.api.hap.Characteristic.InputSourceType.APPLICATION);
             service.addLinkedService(inputSource);

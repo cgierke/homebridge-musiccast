@@ -7,6 +7,7 @@ import {
 import { Cache } from "./Cache";
 import { YamahaAPI } from "./YamahaAPI";
 import { Config, InputConfig, YamahaDevice } from "./YamahaDevice";
+import crypto from "crypto";
 
 const PLUGIN_NAME = "homebridge-musiccast-multiroom";
 const PLATFORM_NAME = "MusiccastMultiroom";
@@ -23,6 +24,7 @@ interface MusiccastMultiroomConfig {
         volumePercentageLow?: number;
         volumePercentageHigh?: number;
         inputs: InputConfig[];
+        presetInfoRegex?: string;
     };
     clients: {
         host: string;
@@ -35,7 +37,14 @@ class MusiccastMultiroom implements IndependentPlatformPlugin {
     constructor(log: Logging, platformConfig: PlatformConfig, api: API) {
         const config = platformConfig as MusiccastMultiroomConfig;
         const cache = new Cache(log);
-        const yamahaApi = new YamahaAPI(log);
+        var presetInfoRegex: RegExp | undefined;
+        if (config.server.presetInfoRegex !== undefined) {
+            try {
+                presetInfoRegex = new RegExp(config.server.presetInfoRegex, 'g'); //g
+            } catch (error) {
+                log.info('invalid regex', error);
+            }
+        }
         const devices: YamahaDevice[] = [];
         try {
             var serverConfig: Config = {
@@ -53,6 +62,8 @@ class MusiccastMultiroom implements IndependentPlatformPlugin {
             log.error("invalid config", error);
             return
         }
+        const groupId = crypto.createHash('md5').update(config.server.host).digest("hex");
+        const yamahaApi = new YamahaAPI(log, groupId, presetInfoRegex);
         devices.push(new YamahaDevice(serverConfig, api, cache, log, yamahaApi));
         for (let client of config.clients) {
             try {

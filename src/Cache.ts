@@ -19,8 +19,8 @@ export class Cache {
     private readonly lastStatusUpdate: { [host: string]: Date } = {};
 
     private readonly updateIntervalPoweredOff = 60 * 1000;
-    private readonly updateIntervalPoweredOn = 20 * 1000;
-    private readonly updateIntervalUserActivity = 1 * 1000;
+    private readonly updateIntervalPoweredOn = 10 * 1000;
+    private readonly updateIntervalUserActivity = 0.25 * 1000;
 
     constructor(log: Logging) {
         this.log = log;
