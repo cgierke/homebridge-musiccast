@@ -107,7 +107,7 @@ export class YamahaDevice {
             }
         }
         this.api.publishExternalAccessories(pluginName, accessories);
-        this.cache.addCallback(this.config.host, this.updateStatus.bind(this), [services]);
+        this.cache.setCallback(this.config.host, this.updateStatus.bind(this), [services]);
     }
 
     private async setInitialStatus() {
@@ -256,14 +256,13 @@ export class YamahaDevice {
     private async recallInputPreset(identifier: number) {
         for (let inputConfig of this.config.inputs!) {
             if (inputConfig.identifier === identifier) {
-                await this.yamahaAPI.setInput(this.config.host, inputConfig.input);
-                return;
+                return this.yamahaAPI.setInput(this.config.host, inputConfig.input);
             }
         }
         const presetInfos: PresetInfoResponse = this.cache.get(this.config.host, 'presetInfo');
         for (let presetInfo of presetInfos.preset_info) {
             if (presetInfo.identifier === identifier) {
-                await this.yamahaAPI.recallPreset(this.config.host, presetInfo.presetId as number);
+                return this.yamahaAPI.recallPreset(this.config.host, presetInfo.presetId as number);
             }
         }
     }
@@ -276,15 +275,16 @@ export class YamahaDevice {
         if (volumeStep) {
             volume = volumeStep.volume;
         }
-        await this.yamahaAPI.setVolume(this.config.host, volume);
+        return this.yamahaAPI.setVolume(this.config.host, volume);
     }
 
     private async linkWithHost() {
         if (this.config.serverHost) {
             await this.yamahaAPI.setPower(this.config.serverHost, 1);
             this.cache.ping(this.config.serverHost, true, true);
+            await this.yamahaAPI.setServerInfo(this.config.host, this.config.serverHost, 'remove');
             await this.yamahaAPI.setClientInfo(this.config.host, this.config.serverHost);
-            await this.yamahaAPI.setServerInfo(this.config.host, this.config.serverHost);
+            await this.yamahaAPI.setServerInfo(this.config.host, this.config.serverHost, 'add');
             await this.yamahaAPI.startDistribution(this.config.serverHost);
         }
     }
@@ -323,7 +323,7 @@ export class YamahaDevice {
             .on(CharacteristicEventTypes.SET, async (active: CharacteristicValue, callback: CharacteristicSetCallback) => {
                 await this.yamahaAPI.setPower(this.config.host, active as number);
                 this.cache.ping(this.config.host, active as boolean, true);
-                callback(this.api.hap.HAPStatus.SUCCESS);
+                callback(this.api.hap.HAPStatus.SUCCESS, active);
                 if (active === this.api.hap.Characteristic.Active.ACTIVE && this.config.serverHost) {
                     this.linkWithHost();
                 }
@@ -338,8 +338,9 @@ export class YamahaDevice {
             })
             .on(CharacteristicEventTypes.SET, async (presetId: CharacteristicValue, callback: CharacteristicSetCallback) => {
                 await this.recallVolumePreset(presetId as number);
+                await this.cache.updateHost(this.config.host);
                 this.cache.ping(this.config.host, undefined, true);
-                callback(this.api.hap.HAPStatus.SUCCESS);
+                callback(this.api.hap.HAPStatus.SUCCESS, presetId);
             });
         for (var volumeStep of this.volumeSteps) {
             let inputSource = accessory.addService(this.api.hap.Service.InputSource, volumeStep.label, volumeStep.id.toString());
@@ -371,7 +372,7 @@ export class YamahaDevice {
             .on(CharacteristicEventTypes.SET, async (active: CharacteristicValue, callback: CharacteristicSetCallback) => {
                 await this.yamahaAPI.setPower(this.config.host, active as number);
                 this.cache.ping(this.config.host, active as boolean, true);
-                callback(this.api.hap.HAPStatus.SUCCESS);
+                callback(this.api.hap.HAPStatus.SUCCESS, active);
                 if (active === this.api.hap.Characteristic.Active.ACTIVE && this.config.serverHost) {
                     this.linkWithHost();
                 }
@@ -386,8 +387,9 @@ export class YamahaDevice {
             })
             .on(CharacteristicEventTypes.SET, async (presetId: CharacteristicValue, callback: CharacteristicSetCallback) => {
                 await this.recallInputPreset(presetId as number);
+                await this.cache.updateHost(this.config.host);
                 this.cache.ping(this.config.host, undefined, true);
-                callback(this.api.hap.HAPStatus.SUCCESS);
+                callback(this.api.hap.HAPStatus.SUCCESS, presetId);
             });
         for (let inputConfig of inputConfigs) {
             let inputSource = accessory.addService(this.api.hap.Service.InputSource, inputConfig.name, inputConfig.identifier.toString());
@@ -430,7 +432,7 @@ export class YamahaDevice {
                 let audioDelay = value as boolean ? "lip_sync" : "audio_sync";
                 await this.yamahaAPI.setLinkAudioDelay(this.config.host, audioDelay);
                 this.cache.ping(this.config.host, undefined, true);
-                callback(this.api.hap.HAPStatus.SUCCESS);
+                callback(this.api.hap.HAPStatus.SUCCESS, value);
             });
         return { lipSyncAccessory: accessory, lipSyncService: service };
     }
@@ -451,7 +453,7 @@ export class YamahaDevice {
                 let program = value as boolean ? "surr_decoder" : "straight";
                 await this.yamahaAPI.setSoundProgram(this.config.host, program);
                 this.cache.ping(this.config.host, undefined, true);
-                callback(this.api.hap.HAPStatus.SUCCESS);
+                callback(this.api.hap.HAPStatus.SUCCESS, value);
             });
         return { surroundDecoderAccessory: accessory, surroundDecoderService: service };
     }

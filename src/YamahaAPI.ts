@@ -177,17 +177,17 @@ export class YamahaAPI {
 
     public async getDeviceInfo(host: string): Promise<DeviceInfoResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/system/getDeviceInfo';
-        return (await this.httpRequest(url)) as DeviceInfoResponse;
+        return this.httpRequest(url).then(result => result as DeviceInfoResponse);
     }
 
     public async getFeatures(host: string): Promise<FeatureResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/system/getFeatures';
-        return (await this.httpRequest(url)) as FeatureResponse;
+        return this.httpRequest(url).then(result => result as FeatureResponse);
     }
 
     public async getPlayInfo(host: string): Promise<PlayInfoResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/getPlayInfo';
-        return (await this.httpRequest(url)) as PlayInfoResponse;
+        return this.httpRequest(url).then(result => result as PlayInfoResponse);
     }
 
     public async getPresetInfo(host: string): Promise<PresetInfoResponse> {
@@ -211,68 +211,68 @@ export class YamahaAPI {
 
     public async getStatus(host: string): Promise<StatusResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/getStatus';
-        return (await this.httpRequest(url)) as StatusResponse;
+        return this.httpRequest(url).then(result => result as StatusResponse);
     }
 
     public async setInput(host: string, input: string): Promise<Response> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setInput?input=' + input;
-        return (await this.httpRequest(url)) as Response;
+        return this.httpRequest(url).then(result => result as Response);
     }
 
     public async setLinkAudioDelay(host: string, delay: string): Promise<Response> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setLinkAudioDelay?delay=' + delay;
-        return (await this.httpRequest(url)) as Response;
+        return this.httpRequest(url).then(result => result as Response);
     }
 
     public async setSoundProgram(host: string, program: string): Promise<Response> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setSoundProgram?program=' + program;
-        return (await this.httpRequest(url)) as Response;
+        return this.httpRequest(url).then(result => result as Response);
     }
 
     public async setPlayback(host: string, playback: string): Promise<Response> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/setPlayback?playback=' + playback;
-        return (await this.httpRequest(url)) as Response;
+        return this.httpRequest(url).then(result => result as Response);
     }
 
     public async setPower(host: string, power: number): Promise<Response> {
         let parameter = (power === 1) ? "on" : "standby";
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setPower?power=' + parameter;
-        return (await this.httpRequest(url)) as Response;
+        return this.httpRequest(url).then(result => result as Response);
     }
 
-    public async setVolume(host: string, volume: number): Promise<StatusResponse> {
+    public async setVolume(host: string, volume: number): Promise<Response> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setVolume?volume=' + volume;
-        return (await this.httpRequest(url)) as StatusResponse;
+        return this.httpRequest(url).then(result => result as Response);
     }
 
     public async recallPreset(host: string, preset: number): Promise<Response> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/recallPreset?zone=' + this.zone + '&num=' + preset.toString();
-        return (await this.httpRequest(url)) as Response;
+        return this.httpRequest(url).then(result => result as Response);
     }
 
-    public async startDistribution(host: string): Promise<StatusResponse> {
+    public async startDistribution(host: string): Promise<Response> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/dist/startDistribution?num=0';
-        return (await this.httpRequest(url)) as StatusResponse;
+        return this.httpRequest(url).then(result => result as Response);
     }
 
-    public async setClientInfo(clientHost: string, serverHost: string): Promise<StatusResponse> {
+    public async setClientInfo(clientHost: string, serverHost: string): Promise<Response> {
         const url = 'http://' + clientHost + '/YamahaExtendedControl/v1/dist/setClientInfo';
         const clientInfo: ClientInfoRequest = {
             group_id: this.groupId,
             zone: [this.zone],
             server_ip_address: serverHost
         };
-        return (await this.httpRequest(url, JSON.stringify(clientInfo))) as StatusResponse;
+        return this.httpRequest(url, JSON.stringify(clientInfo)).then(result => result as Response);
     }
 
-    public async setServerInfo(clientHost: string, serverHost: string): Promise<StatusResponse> {
+    public async setServerInfo(clientHost: string, serverHost: string, type: string): Promise<Response> {
         const url = 'http://' + serverHost + '/YamahaExtendedControl/v1/dist/setServerInfo';
         const serverInfo: ServerInfoRequest = {
             group_id: this.groupId,
             zone: this.zone,
-            type: "add",
+            type: type,
             client_list: [clientHost]
         };
-        return (await this.httpRequest(url, JSON.stringify(serverInfo))) as StatusResponse;
+        return this.httpRequest(url, JSON.stringify(serverInfo)).then(result => result as Response);
     }
 }
