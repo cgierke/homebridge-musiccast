@@ -49,9 +49,13 @@ class MusiccastMultiroom implements IndependentPlatformPlugin {
         try {
             var serverConfig: Config = {
                 host: config.server.host,
-                clients: config.clients.map(item => item.host),
                 inputs: config.server.inputs
             };
+            if (config.clients !== undefined) {
+                serverConfig.clients = config.clients.map(item => item.host);
+            } else {
+                serverConfig.clients = [];
+            }
             if (config.server.volumePercentageLow !== undefined) {
                 serverConfig.volumePercentageLow = config.server.volumePercentageLow;
             }
@@ -65,19 +69,21 @@ class MusiccastMultiroom implements IndependentPlatformPlugin {
         const groupId = crypto.createHash('md5').update(config.server.host).digest("hex");
         const yamahaApi = new YamahaAPI(log, groupId, presetInfoRegex);
         devices.push(new YamahaDevice(serverConfig, api, cache, log, yamahaApi));
-        for (let client of config.clients) {
+        if (config.clients !== undefined) {
             try {
-                var clientConfig: Config = {
-                    host: client.host,
-                    serverHost: config.server.host
+                for (let client of config.clients) {
+                    var clientConfig: Config = {
+                        host: client.host,
+                        serverHost: config.server.host
+                    }
+                    if (client.volumePercentageLow !== undefined) {
+                        clientConfig.volumePercentageLow = client.volumePercentageLow;
+                    }
+                    if (client.volumePercentageHigh !== undefined) {
+                        clientConfig.volumePercentageHigh = client.volumePercentageHigh;
+                    }
+                    devices.push(new YamahaDevice(clientConfig, api, cache, log, yamahaApi));
                 }
-                if (client.volumePercentageLow !== undefined) {
-                    clientConfig.volumePercentageLow = client.volumePercentageLow;
-                }
-                if (client.volumePercentageHigh !== undefined) {
-                    clientConfig.volumePercentageHigh = client.volumePercentageHigh;
-                }
-                devices.push(new YamahaDevice(clientConfig, api, cache, log, yamahaApi));
             } catch (error) {
                 log.error("invalid config", error);
                 return
