@@ -13,7 +13,7 @@
     "author": "Christian Gierke <christian@gierke.de>",
     "engines": {
         "homebridge": ">=1.6.0",
-        "node": ">=14.18.1"
+        "node": "^18.17.0 || ^20.9.0"
     },
     "keywords": [
         "homebridge-plugin"
@@ -30,10 +30,10 @@
         "url": "https://github.com/cgierke/homebridge-musiccast/issues"
     },
     "devDependencies": {
-        "@types/node": "^10.17.60",
+        "@types/node": "^20.12.7",
         "homebridge": "^1.6.0",
-        "rimraf": "^3.0.2",
-        "typescript": "^4.6.3"
+        "rimraf": "^5.0.5",
+        "typescript": "^5.4.5"
     },
     "dependencies": {}
 }
