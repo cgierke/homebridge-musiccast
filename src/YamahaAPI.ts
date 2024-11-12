@@ -234,8 +234,8 @@ export class YamahaAPI {
         return this.httpRequest(url).then(result => result as Response);
     }
 
-    public async setPower(host: string, power: number): Promise<Response> {
-        let parameter = (power === 1) ? "on" : "standby";
+    public async setPower(host: string, power: boolean): Promise<Response> {
+        let parameter = (power === true) ? "on" : "standby";
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setPower?power=' + parameter;
         return this.httpRequest(url).then(result => result as Response);
     }

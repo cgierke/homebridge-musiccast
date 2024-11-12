@@ -45,7 +45,7 @@ export class Cache {
         }, 1000)
         return Promise.all(promises);
     }
-    public async updateHost(host: string) {
+    private async updateHost(host: string) {
         this.lastStatusUpdate[host] = new Date();
         if (host in this.callbacks) {
             return this.callbacks[host].callback(...this.callbacks[host].parameters);

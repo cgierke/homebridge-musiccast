@@ -68,13 +68,14 @@ class MusiccastMultiroom implements IndependentPlatformPlugin {
         }
         const groupId = crypto.createHash('md5').update(config.server.host).digest("hex");
         const yamahaApi = new YamahaAPI(log, groupId, presetInfoRegex);
-        devices.push(new YamahaDevice(serverConfig, api, cache, log, yamahaApi));
+        const serverDevice = new YamahaDevice(serverConfig, api, cache, log, yamahaApi);
+        devices.push(serverDevice);
         if (config.clients !== undefined) {
             try {
                 for (let client of config.clients) {
                     var clientConfig: Config = {
                         host: client.host,
-                        serverHost: config.server.host
+                        serverDevice: serverDevice
                     }
                     if (client.volumePercentageLow !== undefined) {
                         clientConfig.volumePercentageLow = client.volumePercentageLow;

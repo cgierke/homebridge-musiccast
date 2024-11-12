@@ -1,7 +1,5 @@
 import {
     API,
-    Categories,
-    CharacteristicEventTypes,
     CharacteristicGetCallback,
     CharacteristicSetCallback,
     CharacteristicValue,
@@ -21,7 +19,7 @@ import {
 
 export interface Config {
     host: string;
-    serverHost?: string;
+    serverDevice?: YamahaDevice;
     clients?: string[];
     inputs?: InputConfig[];
     volumePercentageLow?: number;
@@ -65,7 +63,7 @@ export class YamahaDevice {
         this.config = config;
         this.log = log;
         this.yamahaAPI = yamahaAPI;
-        if (!config.serverHost) {
+        if (!config.serverDevice) {
             if (this.config.inputs !== undefined) {
                 for (let i = 0; i < this.config.inputs.length; i++) {
                     this.config.inputs[i].identifier = i + 100;
@@ -88,7 +86,7 @@ export class YamahaDevice {
         this.log.info("publishing accessory " + volumeAccessory.displayName);
         accessories.push(volumeAccessory);
         services.volumeService = volumeService;
-        if (!this.config.serverHost) {
+        if (!this.config.serverDevice) {
             let { presetAccessory, presetService } = this.getInputPresetAccessory(pluginName, this.config.inputs!);
             this.log.info("publishing accessory " + presetAccessory.displayName);
             accessories.push(presetAccessory);
@@ -107,21 +105,25 @@ export class YamahaDevice {
             }
         }
         this.api.publishExternalAccessories(pluginName, accessories);
-        this.cache.setCallback(this.config.host, this.updateStatus.bind(this), [services]);
+        this.cache.setCallback(this.getHost(), this.updateStatus.bind(this), [services]);
+    }
+
+    public getHost(): string {
+        return this.config.host
     }
 
     private async setInitialStatus() {
-        this.cache.set(this.config.host, 'deviceInfo', await this.yamahaAPI.getDeviceInfo(this.config.host));
-        this.cache.set(this.config.host, 'presetInfo', await this.yamahaAPI.getPresetInfo(this.config.host));
-        this.cache.set(this.config.host, 'status', await this.yamahaAPI.getStatus(this.config.host));
-        this.cache.set(this.config.host, 'playInfo', await this.yamahaAPI.getPlayInfo(this.config.host));
-        this.cache.set(this.config.host, 'features', await this.yamahaAPI.getFeatures(this.config.host));
+        this.cache.set(this.getHost(), 'deviceInfo', await this.yamahaAPI.getDeviceInfo(this.getHost()));
+        this.cache.set(this.getHost(), 'presetInfo', await this.yamahaAPI.getPresetInfo(this.getHost()));
+        this.cache.set(this.getHost(), 'status', await this.yamahaAPI.getStatus(this.getHost()));
+        this.cache.set(this.getHost(), 'playInfo', await this.yamahaAPI.getPlayInfo(this.getHost()));
+        this.cache.set(this.getHost(), 'features', await this.yamahaAPI.getFeatures(this.getHost()));
         this.volumeSteps = this.getVolumeSteps();
         this.log.debug("volumeSteps", this.volumeSteps);
     }
 
     private getVolumeSteps(): VolumeStep[] {
-        const status: StatusResponse = this.cache.get(this.config.host, 'status');
+        const status: StatusResponse = this.cache.get(this.getHost(), 'status');
         let volumePercentageLow = this.volumePercentageLowDefault;
         let volumePercentageHigh = this.volumePercentageHighDefault;
         if (this.config.volumePercentageHigh !== undefined) {
@@ -150,7 +152,7 @@ export class YamahaDevice {
     }
 
     private shouldPublishLipSyncSwitch(): boolean {
-        const features: FeatureResponse = this.cache.get(this.config.host, 'features');
+        const features: FeatureResponse = this.cache.get(this.getHost(), 'features');
         const mainZone = features.zone.find(function (zone) {
             return zone.id === 'main';
         });
@@ -161,7 +163,7 @@ export class YamahaDevice {
     }
 
     private shouldPublishSurroundDecoderSwitch(): boolean {
-        const features: FeatureResponse = this.cache.get(this.config.host, 'features');
+        const features: FeatureResponse = this.cache.get(this.getHost(), 'features');
         const mainZone = features.zone.find(function (zone) {
             return zone.id === 'main';
         });
@@ -176,18 +178,18 @@ export class YamahaDevice {
         if (this.getCurrentPowerSwitchStatus() && services.presetService) {
             var playInfo: PlayInfoResponse;
             [status, playInfo] = await Promise.all([
-                this.yamahaAPI.getStatus(this.config.host),
-                this.yamahaAPI.getPlayInfo(this.config.host)
+                this.yamahaAPI.getStatus(this.getHost()),
+                this.yamahaAPI.getPlayInfo(this.getHost())
             ]);
-            this.cache.set(this.config.host, 'playInfo', playInfo);
+            this.cache.set(this.getHost(), 'playInfo', playInfo);
         } else {
-            status = await this.yamahaAPI.getStatus(this.config.host);
+            status = await this.yamahaAPI.getStatus(this.getHost());
         }
-        const lastStatus: StatusResponse = this.cache.get(this.config.host, 'status');
+        const lastStatus: StatusResponse = this.cache.get(this.getHost(), 'status');
         const poweredOn = this.getCurrentPowerSwitchStatus();
         const userActivity = JSON.stringify(lastStatus) !== JSON.stringify(status);
-        this.cache.set(this.config.host, 'status', status);
-        this.cache.ping(this.config.host, poweredOn, userActivity);
+        this.cache.set(this.getHost(), 'status', status);
+        this.cache.ping(this.getHost(), poweredOn, userActivity);
         this.updateStatusFromCache(services);
     }
 
@@ -200,7 +202,7 @@ export class YamahaDevice {
         if (services.presetService) {
             const active = this.getCurrentPowerSwitchStatus() ? this.api.hap.Characteristic.Active.ACTIVE : this.api.hap.Characteristic.Active.INACTIVE;
             services.presetService.getCharacteristic(this.api.hap.Characteristic.Active).updateValue(active);
-            let presetId = this.getCurrentInputPresetId();
+            let presetId = this.getCurrentInputPresetIdentifier();
             if (presetId !== undefined) {
                 services.presetService.getCharacteristic(this.api.hap.Characteristic.ActiveIdentifier).updateValue(presetId);
             }
@@ -214,22 +216,22 @@ export class YamahaDevice {
     }
 
     private getCurrentVolumePresetId(): number {
-        const status: StatusResponse = this.cache.get(this.config.host, 'status');
+        const status: StatusResponse = this.cache.get(this.getHost(), 'status');
         const closest = this.volumeSteps.reduce(function (prev, curr) {
             return (Math.abs(curr.volume - status.volume) < Math.abs(prev.volume - status.volume) ? curr : prev);
         });
         return closest.id;
     }
 
-    private getCurrentInputPresetId(): number | undefined {
-        const statusInfo: StatusResponse = this.cache.get(this.config.host, 'status');
+    private getCurrentInputPresetIdentifier(): number | undefined {
+        const statusInfo: StatusResponse = this.cache.get(this.getHost(), 'status');
         for (let inputConfig of this.config.inputs!) {
             if (statusInfo.input === inputConfig.input) {
                 return inputConfig.identifier;
             }
         }
-        const playInfo: PlayInfoResponse = this.cache.get(this.config.host, 'playInfo');
-        const presetInfos: PresetInfoResponse = this.cache.get(this.config.host, 'presetInfo');
+        const playInfo: PlayInfoResponse = this.cache.get(this.getHost(), 'playInfo');
+        const presetInfos: PresetInfoResponse = this.cache.get(this.getHost(), 'presetInfo');
         for (let presetInfo of presetInfos.preset_info) {
             if ((playInfo.input === 'server' || playInfo.input === 'net_radio') && (presetInfo.text === playInfo.track || presetInfo.text === playInfo.artist)) {
                 return presetInfo.identifier;
@@ -239,31 +241,51 @@ export class YamahaDevice {
     }
 
     private getCurrentPowerSwitchStatus(): boolean {
-        const status: StatusResponse = this.cache.get(this.config.host, 'status');
+        const status: StatusResponse = this.cache.get(this.getHost(), 'status');
         return status.power === "on";
     }
 
     private getCurrentLipSyncSwitchStatus(): boolean {
-        const status: StatusResponse = this.cache.get(this.config.host, 'status');
+        const status: StatusResponse = this.cache.get(this.getHost(), 'status');
         return status.link_audio_delay === "lip_sync";
     }
 
     private getCurrentSurroundDecoderSwitchStatus(): boolean {
-        const status: StatusResponse = this.cache.get(this.config.host, 'status');
+        const status: StatusResponse = this.cache.get(this.getHost(), 'status');
         return status.sound_program === "surr_decoder";
     }
 
     private async recallInputPreset(identifier: number) {
+        let input: string | undefined;
+        let presetId: number | undefined;
         for (let inputConfig of this.config.inputs!) {
             if (inputConfig.identifier === identifier) {
-                return this.yamahaAPI.setInput(this.config.host, inputConfig.input);
+                input = inputConfig.input;
+                break;
             }
         }
-        const presetInfos: PresetInfoResponse = this.cache.get(this.config.host, 'presetInfo');
+        const presetInfos: PresetInfoResponse = this.cache.get(this.getHost(), 'presetInfo');
         for (let presetInfo of presetInfos.preset_info) {
             if (presetInfo.identifier === identifier) {
-                return this.yamahaAPI.recallPreset(this.config.host, presetInfo.presetId as number);
+                presetId = Number(presetInfo.presetId);
+                break;
             }
+        }
+        if (input) {
+            this.yamahaAPI.setInput(this.getHost(), input);
+        } else if (presetId) {
+            this.yamahaAPI.recallPreset(this.getHost(), presetId);
+        }
+        return this.waitForInputPreset(identifier);
+    }
+
+    private async waitForInputPreset(identifier: number, maxWait: number = 10000) {
+        const delay = 1000;
+        const currentPresetIdentifier = this.getCurrentInputPresetIdentifier();
+        if (currentPresetIdentifier !== identifier && maxWait > 0) {
+            return setTimeout(async () => {
+                await this.waitForInputPreset(identifier, maxWait - delay);
+            }, delay);
         }
     }
 
@@ -275,71 +297,98 @@ export class YamahaDevice {
         if (volumeStep) {
             volume = volumeStep.volume;
         }
-        return this.yamahaAPI.setVolume(this.config.host, volume);
+        this.yamahaAPI.setVolume(this.getHost(), volume);
+        return this.waitForVolumePreset(presetId);
+    }
+
+    private async waitForVolumePreset(presetId: number, maxWait: number = 10000) {
+        const delay = 1000;
+        const currentPresetId = this.getCurrentVolumePresetId();
+        if (currentPresetId !== presetId && maxWait > 0) {
+            return setTimeout(async () => {
+                await this.waitForVolumePreset(presetId, maxWait - delay);
+            }, delay);
+        }
+    }
+
+    private async setPower(status: boolean) {
+        this.yamahaAPI.setPower(this.getHost(), status);
+        return this.waitForPower(status);
+    }
+
+    private async waitForPower(status: boolean, maxWait: number = 10000) {
+        const delay = 1000;
+        const currentStatus = this.getCurrentPowerSwitchStatus();
+        if (currentStatus !== status && maxWait > 0) {
+            return setTimeout(async () => {
+                await this.waitForPower(status, maxWait - delay);
+            }, delay);
+        }
     }
 
     private async linkWithHost() {
-        if (this.config.serverHost) {
-            await this.yamahaAPI.setPower(this.config.serverHost, 1);
-            this.cache.ping(this.config.serverHost, true, true);
-            await this.yamahaAPI.setServerInfo(this.config.host, this.config.serverHost, 'remove');
-            await this.yamahaAPI.setClientInfo(this.config.host, this.config.serverHost);
-            await this.yamahaAPI.setServerInfo(this.config.host, this.config.serverHost, 'add');
-            await this.yamahaAPI.startDistribution(this.config.serverHost);
+        if (this.config.serverDevice) {
+            await this.config.serverDevice.setPower(true);
+            await this.setPower(true);
+            await this.yamahaAPI.setServerInfo(this.getHost(), this.config.serverDevice.getHost(), 'remove');
+            await this.yamahaAPI.setClientInfo(this.getHost(), this.config.serverDevice.getHost());
+            await this.yamahaAPI.setServerInfo(this.getHost(), this.config.serverDevice.getHost(), 'add');
+            await this.yamahaAPI.startDistribution(this.config.serverDevice.getHost());
         }
     }
 
     private async powerOffClients() {
         if (this.config.clients) {
             for (let client of this.config.clients) {
-                await this.yamahaAPI.setPower(client, 0);
+                await this.yamahaAPI.setPower(client, false);
                 this.cache.ping(client, false, true);
             }
         }
     }
 
     private addServiceAccessoryInformation(accessory: PlatformAccessory) {
-        const deviceInfo: DeviceInfoResponse = this.cache.get(this.config.host, 'deviceInfo');
+        const deviceInfo: DeviceInfoResponse = this.cache.get(this.getHost(), 'deviceInfo');
         accessory.getService(this.api.hap.Service.AccessoryInformation)!
             .setCharacteristic(this.api.hap.Characteristic.Manufacturer, "Yamaha")
             .setCharacteristic(this.api.hap.Characteristic.Model, deviceInfo.model_name)
-            .setCharacteristic(this.api.hap.Characteristic.SerialNumber, deviceInfo.serial_number + " " + this.config.host)
+            .setCharacteristic(this.api.hap.Characteristic.SerialNumber, deviceInfo.serial_number + " " + this.getHost())
             .setCharacteristic(this.api.hap.Characteristic.SoftwareRevision, deviceInfo.api_version.toString())
             .setCharacteristic(this.api.hap.Characteristic.FirmwareRevision, deviceInfo.system_version.toString());
     }
 
     private getVolumeAccessory(pluginName: string) {
-        const deviceInfo: DeviceInfoResponse = this.cache.get(this.config.host, 'deviceInfo');
+        const deviceInfo: DeviceInfoResponse = this.cache.get(this.getHost(), 'deviceInfo');
         const service = new this.api.hap.Service.Television(deviceInfo.model_name);
-        const uuid = this.api.hap.uuid.generate(`${pluginName}-${this.config.host}-volume`);
-        const accessory = new this.api.platformAccessory(deviceInfo.model_name, uuid, this.config.serverHost ? Categories.SPEAKER : Categories.AUDIO_RECEIVER);
+        const uuid = this.api.hap.uuid.generate(`${pluginName}-${this.getHost()}-volume`);
+        const accessory = new this.api.platformAccessory(deviceInfo.model_name, uuid, this.config.serverDevice ? this.api.hap.Categories.SPEAKER : this.api.hap.Categories.AUDIO_RECEIVER);
         accessory.addService(service);
         this.addServiceAccessoryInformation(accessory);
         service.getCharacteristic(this.api.hap.Characteristic.Active)
-            .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
+            .on(this.api.hap.CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
                 let active = this.getCurrentPowerSwitchStatus() ? this.api.hap.Characteristic.Active.ACTIVE : this.api.hap.Characteristic.Active.INACTIVE;
                 callback(this.api.hap.HAPStatus.SUCCESS, active);
             })
-            .on(CharacteristicEventTypes.SET, async (active: CharacteristicValue, callback: CharacteristicSetCallback) => {
-                await this.yamahaAPI.setPower(this.config.host, active as number);
-                this.cache.ping(this.config.host, active as boolean, true);
-                callback(this.api.hap.HAPStatus.SUCCESS, active);
-                if (active === this.api.hap.Characteristic.Active.ACTIVE && this.config.serverHost) {
+            .on(this.api.hap.CharacteristicEventTypes.SET, async (active: CharacteristicValue, callback: CharacteristicSetCallback) => {
+                await this.setPower(Boolean(active));
+                this.cache.ping(this.getHost(), Boolean(active), true);
+                if (active === this.api.hap.Characteristic.Active.ACTIVE && this.config.serverDevice) {
+                    this.cache.ping(this.config.serverDevice.getHost(), true, true);
                     this.linkWithHost();
                 }
                 if (active === this.api.hap.Characteristic.Active.INACTIVE) {
                     this.powerOffClients();
                 }
+                callback(this.api.hap.HAPStatus.SUCCESS, active);
             });
         service
             .getCharacteristic(this.api.hap.Characteristic.ActiveIdentifier)
-            .on(CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
+            .on(this.api.hap.CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
                 callback(this.api.hap.HAPStatus.SUCCESS, this.getCurrentVolumePresetId());
             })
-            .on(CharacteristicEventTypes.SET, async (presetId: CharacteristicValue, callback: CharacteristicSetCallback) => {
+            .on(this.api.hap.CharacteristicEventTypes.SET, async (presetId: CharacteristicValue, callback: CharacteristicSetCallback) => {
+                await this.setPower(true);
                 await this.recallVolumePreset(presetId as number);
-                await this.cache.updateHost(this.config.host);
-                this.cache.ping(this.config.host, undefined, true);
+                this.cache.ping(this.getHost(), undefined, true);
                 callback(this.api.hap.HAPStatus.SUCCESS, presetId);
             });
         for (var volumeStep of this.volumeSteps) {
@@ -358,37 +407,38 @@ export class YamahaDevice {
 
     private getInputPresetAccessory(pluginName: string, inputConfigs: InputConfig[]) {
         const service = new this.api.hap.Service.Television();
-        const deviceInfo: DeviceInfoResponse = this.cache.get(this.config.host, 'deviceInfo');
+        const deviceInfo: DeviceInfoResponse = this.cache.get(this.getHost(), 'deviceInfo');
         const name = "Preset " + deviceInfo.model_name;
-        const uuid = this.api.hap.uuid.generate(`${pluginName}-${this.config.host}-preset`);
-        const accessory = new this.api.platformAccessory(name, uuid, Categories.AUDIO_RECEIVER);
+        const uuid = this.api.hap.uuid.generate(`${pluginName}-${this.getHost()}-preset`);
+        const accessory = new this.api.platformAccessory(name, uuid, this.api.hap.Categories.AUDIO_RECEIVER);
         accessory.addService(service);
         this.addServiceAccessoryInformation(accessory);
         service.getCharacteristic(this.api.hap.Characteristic.Active)
-            .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
+            .on(this.api.hap.CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
                 let active = this.getCurrentPowerSwitchStatus() ? this.api.hap.Characteristic.Active.ACTIVE : this.api.hap.Characteristic.Active.INACTIVE;
                 callback(this.api.hap.HAPStatus.SUCCESS, active);
             })
-            .on(CharacteristicEventTypes.SET, async (active: CharacteristicValue, callback: CharacteristicSetCallback) => {
-                await this.yamahaAPI.setPower(this.config.host, active as number);
-                this.cache.ping(this.config.host, active as boolean, true);
-                callback(this.api.hap.HAPStatus.SUCCESS, active);
-                if (active === this.api.hap.Characteristic.Active.ACTIVE && this.config.serverHost) {
+            .on(this.api.hap.CharacteristicEventTypes.SET, async (active: CharacteristicValue, callback: CharacteristicSetCallback) => {
+                await this.setPower(Boolean(active));
+                this.cache.ping(this.getHost(), Boolean(active), true);
+                if (active === this.api.hap.Characteristic.Active.ACTIVE && this.config.serverDevice) {
+                    this.cache.ping(this.config.serverDevice.getHost(), true, true);
                     this.linkWithHost();
                 }
                 if (active === this.api.hap.Characteristic.Active.INACTIVE) {
                     this.powerOffClients();
                 }
+                callback(this.api.hap.HAPStatus.SUCCESS, active);
             });
         service
             .getCharacteristic(this.api.hap.Characteristic.ActiveIdentifier)
-            .on(CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
-                callback(this.api.hap.HAPStatus.SUCCESS, this.getCurrentInputPresetId());
+            .on(this.api.hap.CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
+                callback(this.api.hap.HAPStatus.SUCCESS, this.getCurrentInputPresetIdentifier());
             })
-            .on(CharacteristicEventTypes.SET, async (presetId: CharacteristicValue, callback: CharacteristicSetCallback) => {
+            .on(this.api.hap.CharacteristicEventTypes.SET, async (presetId: CharacteristicValue, callback: CharacteristicSetCallback) => {
+                await this.setPower(true);
                 await this.recallInputPreset(presetId as number);
-                await this.cache.updateHost(this.config.host);
-                this.cache.ping(this.config.host, undefined, true);
+                this.cache.ping(this.getHost(), undefined, true);
                 callback(this.api.hap.HAPStatus.SUCCESS, presetId);
             });
         for (let inputConfig of inputConfigs) {
@@ -400,7 +450,7 @@ export class YamahaDevice {
                 .setCharacteristic(this.api.hap.Characteristic.InputSourceType, this.api.hap.Characteristic.InputSourceType.APPLICATION);
             service.addLinkedService(inputSource);
         }
-        const presetInfos: PresetInfoResponse = this.cache.get(this.config.host, 'presetInfo');
+        const presetInfos: PresetInfoResponse = this.cache.get(this.getHost(), 'presetInfo');
         for (let presetInfo of presetInfos.preset_info) {
             let inputSource = accessory.addService(this.api.hap.Service.InputSource, presetInfo.displayText, presetInfo.identifier.toString());
             inputSource
@@ -417,21 +467,21 @@ export class YamahaDevice {
 
     private getLipSyncAccessory(pluginName: string) {
         const service = new this.api.hap.Service.Switch();
-        const deviceInfo: DeviceInfoResponse = this.cache.get(this.config.host, 'deviceInfo');
+        const deviceInfo: DeviceInfoResponse = this.cache.get(this.getHost(), 'deviceInfo');
         const name = "LipSync " + deviceInfo.model_name;
-        const uuid = this.api.hap.uuid.generate(`${pluginName}-${this.config.host}-lipsync`);
-        const accessory = new this.api.platformAccessory(name, uuid, Categories.AUDIO_RECEIVER);
+        const uuid = this.api.hap.uuid.generate(`${pluginName}-${this.getHost()}-lipsync`);
+        const accessory = new this.api.platformAccessory(name, uuid, this.api.hap.Categories.AUDIO_RECEIVER);
         accessory.addService(service);
         this.addServiceAccessoryInformation(accessory);
         service
             .getCharacteristic(this.api.hap.Characteristic.On)
-            .on(CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
+            .on(this.api.hap.CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
                 callback(this.api.hap.HAPStatus.SUCCESS, this.getCurrentLipSyncSwitchStatus());
             })
-            .on(CharacteristicEventTypes.SET, async (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
+            .on(this.api.hap.CharacteristicEventTypes.SET, async (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
                 let audioDelay = value as boolean ? "lip_sync" : "audio_sync";
-                await this.yamahaAPI.setLinkAudioDelay(this.config.host, audioDelay);
-                this.cache.ping(this.config.host, undefined, true);
+                await this.yamahaAPI.setLinkAudioDelay(this.getHost(), audioDelay);
+                this.cache.ping(this.getHost(), undefined, true);
                 callback(this.api.hap.HAPStatus.SUCCESS, value);
             });
         return { lipSyncAccessory: accessory, lipSyncService: service };
@@ -439,20 +489,20 @@ export class YamahaDevice {
 
     private getSurroundDecoderAccessory(pluginName: string) {
         const service = new this.api.hap.Service.Switch();
-        const name = "Surround Decoder " + this.cache.get(this.config.host, 'deviceInfo').model_name;
-        const uuid = this.api.hap.uuid.generate(`${pluginName}-${this.config.host}-surround`)
-        const accessory = new this.api.platformAccessory(name, uuid, Categories.AUDIO_RECEIVER);
+        const name = "Surround Decoder " + this.cache.get(this.getHost(), 'deviceInfo').model_name;
+        const uuid = this.api.hap.uuid.generate(`${pluginName}-${this.getHost()}-surround`)
+        const accessory = new this.api.platformAccessory(name, uuid, this.api.hap.Categories.AUDIO_RECEIVER);
         accessory.addService(service);
         this.addServiceAccessoryInformation(accessory);
         service
             .getCharacteristic(this.api.hap.Characteristic.On)
-            .on(CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
+            .on(this.api.hap.CharacteristicEventTypes.GET, async (callback: CharacteristicGetCallback) => {
                 callback(this.api.hap.HAPStatus.SUCCESS, this.getCurrentSurroundDecoderSwitchStatus());
             })
-            .on(CharacteristicEventTypes.SET, async (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
+            .on(this.api.hap.CharacteristicEventTypes.SET, async (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
                 let program = value as boolean ? "surr_decoder" : "straight";
-                await this.yamahaAPI.setSoundProgram(this.config.host, program);
-                this.cache.ping(this.config.host, undefined, true);
+                await this.yamahaAPI.setSoundProgram(this.getHost(), program);
+                this.cache.ping(this.getHost(), undefined, true);
                 callback(this.api.hap.HAPStatus.SUCCESS, value);
             });
         return { surroundDecoderAccessory: accessory, surroundDecoderService: service };
