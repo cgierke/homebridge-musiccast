@@ -2,7 +2,7 @@
 
 Official MusicCast support in Apple HomeKit is limited. This plugin provides quick access to favorite presets, input source selection and power/volume control within the Apple Home app. Speakers will always be linked to their MusicCast server.
 
-<img src="https://gitlab.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-accessories.png" width="550">
+<img src="https://github.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-accessories.png" width="550">
 
 Configuration:
 * server: IP address or hostname of the Yamaha receiver (or main MusicCast speaker) that will serve music to the clients
@@ -34,7 +34,7 @@ Configuration:
 
 The current Apple Home app doesn't really support volume for speakers and receivers, so the source selector is "misused" to quickly adjust volume in 6 steps.
 
-<img src="https://gitlab.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-volume.png" width="550">
+<img src="https://github.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-volume.png" width="550">
 
 Lower and upper volume limits can be adjusted in the settings for each device. Something like 25% (lower limit) to 65% (upper limit) is probably reasonable for most environments.
 
@@ -63,7 +63,19 @@ Lower and upper volume limits can be adjusted in the settings for each device. S
 
 For the server device, there will be a separate accessory to select the input source. It will provide all favorites saved on the device. Use the Yamaha MusicCast app to save, edit and order favorites.
 
-<img src="https://gitlab.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-presets.png" width="550">
+<img src="https://github.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-presets.png" width="550">
+
+If the names of the favorites contain parts you don't want to see in HomeKit, they can be removed with a regular expression. Everything matching `presetInfoRegex` is stripped from the name, for example to turn `BBC Radio 1 (MP3 128k)` into `BBC Radio 1`:
+```
+{
+    "server": {
+        ...
+        "presetInfoRegex": " \\(.*\\)$"
+    },
+    ...
+    "platform": "MusiccastMultiroom"
+}
+```
 
 Additional inputs like HDMI can be added and named in the settings:
 ```
@@ -126,7 +138,7 @@ usb
 
 When supported by the server device, up to two additional switches will be published:
 
-<img src="https://gitlab.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-switches.png" width="550">
+<img src="https://github.com/cgierke/homebridge-musiccast/raw/main/homekit-screenshot-switches.png" width="550">
 
 - Surround Decoder:
   - `on`: set sound program to `Surround Decoder`

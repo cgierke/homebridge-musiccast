@@ -1,19 +1,21 @@
 {
     "name": "homebridge-musiccast-multiroom",
-    "version": "0.2.14",
+    "displayName": "Yamaha MusicCast Multiroom",
+    "version": "0.2.15",
     "description": "Homebridge Yamaha MusicCast Multiroom Plugin",
     "main": "dist/main.js",
     "scripts": {
-        "clean": "rimraf ./dist",
-        "build": "rimraf ./dist && tsc",
+        "clean": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\"",
+        "build": "npm run clean && tsc",
+        "lint": "eslint .",
         "prepublishOnly": "npm run build",
         "postpublish": "npm run clean",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "author": "Christian Gierke <christian@gierke.de>",
     "engines": {
-        "homebridge": "^1.8.0 || ^2.0.0-beta.0",
-        "node": "^18.20.4 || ^20.18.0 || ^22.10.0"
+        "homebridge": "^1.8.0 || ^2.0.0",
+        "node": "^20.18.0 || ^22.10.0 || ^24.0.0 || ^26.0.0"
     },
     "keywords": [
         "homebridge-plugin"
@@ -26,14 +28,16 @@
         "type": "git",
         "url": "https://github.com/cgierke/homebridge-musiccast.git"
     },
+    "homepage": "https://github.com/cgierke/homebridge-musiccast#readme",
     "bugs": {
         "url": "https://github.com/cgierke/homebridge-musiccast/issues"
     },
     "devDependencies": {
-        "@types/node": "^20.12.7",
-        "homebridge": "^1.6.0",
-        "rimraf": "^5.0.5",
-        "typescript": "^5.4.5"
-    },
-    "dependencies": {}
+        "@eslint/js": "^10.0.1",
+        "@types/node": "^22.0.0",
+        "eslint": "^10.15.0",
+        "homebridge": "^2.5.0",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.72.2"
+    }
 }

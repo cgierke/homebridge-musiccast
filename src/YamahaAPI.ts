@@ -1,7 +1,4 @@
-import {
-    Logging,
-} from "homebridge";
-import { ClientRequest, request, RequestOptions } from "http";
+import type { Logging } from "homebridge";
 
 export interface DeviceInfoResponse {
     response_code: number;
@@ -62,7 +59,7 @@ interface PresetInfo {
     displayText: string;
     //attribute?: number | null;
 }
-interface Response {
+interface CommandResponse {
     response_code: number;
 }
 export interface StatusResponse {
@@ -120,59 +117,47 @@ interface ClientInfoRequest {
 }
 
 export class YamahaAPI {
-    private readonly log: Logging;
-    private readonly groupId: string;
     private readonly zone: string = "main";
-    private readonly presetInfoRegex?: RegExp;
+    private readonly requestTimeout: number = 5000;
 
-    constructor(log: Logging, groupId: string, presetInfoRegex?: RegExp) {
-        this.log = log;
-        this.groupId = groupId;
-        this.presetInfoRegex = presetInfoRegex;
-    }
+    constructor(
+        private readonly log: Logging,
+        private readonly groupId: string,
+        private readonly presetInfoRegex?: RegExp,
+    ) { }
 
-    private async httpRequest(url: string, postData?: string) {
+    private async httpRequest(url: string, postData?: string): Promise<unknown> {
         this.log.debug(url);
+        let response: Response;
         try {
-            return new Promise((resolve, reject) => {
-                const options: RequestOptions = {};
-                if (postData) {
-                    options.method = "POST";
-                    options.headers = {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'Content-Length': Buffer.byteLength(postData),
-                    };
-                } else {
-                    options.method = "GET";
-                    options.headers = {
-                        'Accept': 'application/json',
-                    }
-                }
-                const req: ClientRequest = request(url, options);
-                req.on('error', (error) => {
-                    this.log.error("httpRequest error", error);
-                });
-                if (postData) {
-                    req.write(postData);
-                }
-                req.end();
-                req.on('response', (response) => {
-                    response.setEncoding('utf8');
-                    let data: string = '';
-                    response.on('data', (chunk: string) => {
-                        data += chunk;
-                    });
-                    response.on('end', () => {
-                        const result = JSON.parse(data);
-                        this.log.debug("httpRequest result", result);
-                        resolve(result);
-                    });
-                });
+            response = await fetch(url, {
+                method: postData ? "POST" : "GET",
+                headers: postData
+                    ? { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+                    : { 'Accept': 'application/json' },
+                body: postData,
+                signal: AbortSignal.timeout(this.requestTimeout),
             });
         } catch (error) {
-            this.log.error("httpRequest error", error);
+            const cause = error instanceof Error ? error.cause : undefined;
+            const reason = cause instanceof Error ? cause.message : (error instanceof Error ? error.message : String(error));
+            throw new Error(`request to ${url} failed: ${reason}`, { cause: error });
         }
+        if (!response.ok) {
+            throw new Error(`request to ${url} failed: HTTP ${response.status}`);
+        }
+        let result: unknown;
+        try {
+            result = await response.json();
+        } catch {
+            throw new Error(`request to ${url} failed: response is not valid JSON`);
+        }
+        this.log.debug("httpRequest result", result);
+        const responseCode = (result as { response_code?: number } | null)?.response_code;
+        if (responseCode !== undefined && responseCode !== 0) {
+            this.log.warn(`request to ${url} returned response_code ${responseCode}`);
+        }
+        return result;
     }
 
     public async getDeviceInfo(host: string): Promise<DeviceInfoResponse> {
@@ -192,7 +177,7 @@ export class YamahaAPI {
 
     public async getPresetInfo(host: string): Promise<PresetInfoResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/getPresetInfo';
-        let presetInfos = await this.httpRequest(url) as PresetInfoResponse;
+        const presetInfos = await this.httpRequest(url) as PresetInfoResponse;
         for (let i = 0; i < presetInfos.preset_info.length; i++) {
             presetInfos.preset_info[i].presetId = i + 1;
             presetInfos.preset_info[i].identifier = i + 200;
@@ -214,58 +199,58 @@ export class YamahaAPI {
         return this.httpRequest(url).then(result => result as StatusResponse);
     }
 
-    public async setInput(host: string, input: string): Promise<Response> {
+    public async setInput(host: string, input: string): Promise<CommandResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setInput?input=' + input;
-        return this.httpRequest(url).then(result => result as Response);
+        return this.httpRequest(url).then(result => result as CommandResponse);
     }
 
-    public async setLinkAudioDelay(host: string, delay: string): Promise<Response> {
+    public async setLinkAudioDelay(host: string, delay: string): Promise<CommandResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setLinkAudioDelay?delay=' + delay;
-        return this.httpRequest(url).then(result => result as Response);
+        return this.httpRequest(url).then(result => result as CommandResponse);
     }
 
-    public async setSoundProgram(host: string, program: string): Promise<Response> {
+    public async setSoundProgram(host: string, program: string): Promise<CommandResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setSoundProgram?program=' + program;
-        return this.httpRequest(url).then(result => result as Response);
+        return this.httpRequest(url).then(result => result as CommandResponse);
     }
 
-    public async setPlayback(host: string, playback: string): Promise<Response> {
+    public async setPlayback(host: string, playback: string): Promise<CommandResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/setPlayback?playback=' + playback;
-        return this.httpRequest(url).then(result => result as Response);
+        return this.httpRequest(url).then(result => result as CommandResponse);
     }
 
-    public async setPower(host: string, power: boolean): Promise<Response> {
-        let parameter = (power === true) ? "on" : "standby";
+    public async setPower(host: string, power: boolean): Promise<CommandResponse> {
+        const parameter = (power === true) ? "on" : "standby";
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setPower?power=' + parameter;
-        return this.httpRequest(url).then(result => result as Response);
+        return this.httpRequest(url).then(result => result as CommandResponse);
     }
 
-    public async setVolume(host: string, volume: number): Promise<Response> {
+    public async setVolume(host: string, volume: number): Promise<CommandResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/' + this.zone + '/setVolume?volume=' + volume;
-        return this.httpRequest(url).then(result => result as Response);
+        return this.httpRequest(url).then(result => result as CommandResponse);
     }
 
-    public async recallPreset(host: string, preset: number): Promise<Response> {
+    public async recallPreset(host: string, preset: number): Promise<CommandResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/netusb/recallPreset?zone=' + this.zone + '&num=' + preset.toString();
-        return this.httpRequest(url).then(result => result as Response);
+        return this.httpRequest(url).then(result => result as CommandResponse);
     }
 
-    public async startDistribution(host: string): Promise<Response> {
+    public async startDistribution(host: string): Promise<CommandResponse> {
         const url = 'http://' + host + '/YamahaExtendedControl/v1/dist/startDistribution?num=0';
-        return this.httpRequest(url).then(result => result as Response);
+        return this.httpRequest(url).then(result => result as CommandResponse);
     }
 
-    public async setClientInfo(clientHost: string, serverHost: string): Promise<Response> {
+    public async setClientInfo(clientHost: string, serverHost: string): Promise<CommandResponse> {
         const url = 'http://' + clientHost + '/YamahaExtendedControl/v1/dist/setClientInfo';
         const clientInfo: ClientInfoRequest = {
             group_id: this.groupId,
             zone: [this.zone],
             server_ip_address: serverHost
         };
-        return this.httpRequest(url, JSON.stringify(clientInfo)).then(result => result as Response);
+        return this.httpRequest(url, JSON.stringify(clientInfo)).then(result => result as CommandResponse);
     }
 
-    public async setServerInfo(clientHost: string, serverHost: string, type: string): Promise<Response> {
+    public async setServerInfo(clientHost: string, serverHost: string, type: string): Promise<CommandResponse> {
         const url = 'http://' + serverHost + '/YamahaExtendedControl/v1/dist/setServerInfo';
         const serverInfo: ServerInfoRequest = {
             group_id: this.groupId,
@@ -273,6 +258,6 @@ export class YamahaAPI {
             type: type,
             client_list: [clientHost]
         };
-        return this.httpRequest(url, JSON.stringify(serverInfo)).then(result => result as Response);
+        return this.httpRequest(url, JSON.stringify(serverInfo)).then(result => result as CommandResponse);
     }
 }

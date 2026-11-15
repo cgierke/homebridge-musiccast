@@ -1,4 +1,4 @@
-import {
+import type {
     API,
     IndependentPlatformPlugin,
     Logging,
@@ -6,7 +6,7 @@ import {
 } from "homebridge";
 import { Cache } from "./Cache";
 import { YamahaAPI } from "./YamahaAPI";
-import { Config, InputConfig, YamahaDevice } from "./YamahaDevice";
+import { type Config, type InputConfig, YamahaDevice } from "./YamahaDevice";
 import crypto from "crypto";
 
 const PLUGIN_NAME = "homebridge-musiccast-multiroom";
@@ -36,8 +36,12 @@ interface MusiccastMultiroomConfig {
 class MusiccastMultiroom implements IndependentPlatformPlugin {
     constructor(log: Logging, platformConfig: PlatformConfig, api: API) {
         const config = platformConfig as MusiccastMultiroomConfig;
+        if (!config?.server?.host) {
+            log.error("no server host configured, please set up the plugin in the Homebridge settings");
+            return;
+        }
         const cache = new Cache(log);
-        var presetInfoRegex: RegExp | undefined;
+        let presetInfoRegex: RegExp | undefined;
         if (config.server.presetInfoRegex !== undefined) {
             try {
                 presetInfoRegex = new RegExp(config.server.presetInfoRegex, 'g'); //g
@@ -46,8 +50,9 @@ class MusiccastMultiroom implements IndependentPlatformPlugin {
             }
         }
         const devices: YamahaDevice[] = [];
+        let serverConfig: Config;
         try {
-            var serverConfig: Config = {
+            serverConfig = {
                 host: config.server.host,
                 inputs: config.server.inputs
             };
@@ -72,8 +77,8 @@ class MusiccastMultiroom implements IndependentPlatformPlugin {
         devices.push(serverDevice);
         if (config.clients !== undefined) {
             try {
-                for (let client of config.clients) {
-                    var clientConfig: Config = {
+                for (const client of config.clients) {
+                    const clientConfig: Config = {
                         host: client.host,
                         serverDevice: serverDevice
                     }
@@ -90,8 +95,15 @@ class MusiccastMultiroom implements IndependentPlatformPlugin {
                 return
             }
         }
-        for (let device of devices) {
-            device.publishAccessory(PLUGIN_NAME);
+        const retryDelay = 60 * 1000;
+        const publish = (device: YamahaDevice) => {
+            device.publishAccessory(PLUGIN_NAME).catch(error => {
+                log.error(`could not set up ${device.getHost()}, retrying in ${retryDelay / 1000} seconds:`, error instanceof Error ? error.message : error);
+                setTimeout(() => publish(device), retryDelay);
+            });
+        };
+        for (const device of devices) {
+            publish(device);
         }
     }
 }
